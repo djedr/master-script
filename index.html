@@ -1,0 +1,179 @@
+<!doctype html>
+<html>
+<head> 
+  <script src="main.js"></script>
+  
+  <style>
+    .ast, .ast ul, .ast li {
+      position: relative;
+      background-color: #ddd;
+      vertical-align: middle;
+    }
+    .ast ul {
+      list-style: none;
+      padding-left: 0.1em;
+      padding-bottom: 0.1em;
+      padding-right: 0.1em;
+      text-align: center;
+      margin: 0.025em;
+      border-radius: 6px;
+    }
+    .ast li::before, .ast li::after {
+      content: "";
+      position: absolute;
+      left: -1em;
+    }
+    .xast li::before {
+      border-top: 1px solid #000;
+      top: 9px;
+      width: 8px;
+      height: 0;
+    }
+    .xast li::after {
+      border-left: 1px solid #000;
+      height: 100%;
+      width: 0px;
+      top: 2px;
+    }
+    .ast ul > li:last-child::after {
+      height: 8px;
+    }
+    .argument, .operator {
+      box-shadow: 1px 1px 1px black;
+      display: inline-block;
+    }
+    .operator {
+        /*padding: 0.25em;
+        margin: 0.25em;*/
+    }
+    
+    .word {
+      font-family: sans-serif;
+      font-size: 0.75em;
+      /*border: 1px solid gray;
+      font-weight: bold;*/     
+      text-align: center;
+      text-shadow: 0px 0px 4px white;
+      margin: auto;
+      background-color: rgba(255, 255, 255, 0.1);
+      margin-bottom: 0.05em;
+      border: 1px solid #444;
+      padding: 0.1em;
+      display: inline-block;
+    }
+    
+    .cell {
+      /*border: 1px solid #999;*/
+      font-family: "Times New Roman", Times, serif;
+      width: 32px;
+      height: 32px;
+      font-weight: bold;
+      color: #eee;
+      overflow: hidden;
+      display: inline-block;
+      /*margin: 0 0 -1px -1px;*/
+      padding: 0;
+      text-align: center;
+    }
+    
+    .row {
+      margin: 0;
+      padding: 0;
+      display: block;
+      height: 32px;
+    }
+  </style>
+</head>
+
+<script>    
+  function ep (prog) {
+      return evaluate(parse(prog), {});
+  }
+
+  function execute_and_visualise() {
+    var to_parse = document.getElementById('console-input').value;
+    var parsed = parse(to_parse);
+    var evaluated = evaluate(parsed, {});
+    document.getElementById('ast-visualisation').innerHTML = visualise(parsed, {}, '0');
+    ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #ff8888;\' />' + ']');
+  }
+  
+  function drawLine(type, x, y, length) {
+    var line = document.createElement("div"),
+        borderSide = type === "vertical" ? "left" : "top",
+        wh = type === "vertical" ? ["width", "height"] : ["height", "width"],
+        styleCss = "border-" + borderSide + ": 1px solid blue; position: absolute; top: "
+                    + y + "px; left: "
+                    + x + "px; " + wh[0] + ": 0px; " + wh[1] + ": " + length + "px";
+    
+    line.style = styleCss;
+    document.body.appendChild(line);
+  }
+  
+  window.addEventListener("load", function () {
+    var consoleInput = document.querySelector("#console-input")
+    
+    consoleInput.addEventListener("keydown", function (event) {
+      var i, words;
+      
+      console.log(event.which);
+      switch (event.which) {
+        case 9:
+          event.preventDefault();
+          consoleInput.value += "\t";
+          break;   
+        default:
+          execute_and_visualise();
+          words = document.querySelectorAll(".word");
+          
+          console.log(words);
+          
+          for (i = 0; i < words.length; ++i) {
+            console.log(i);
+             words.item(i).addEventListener("click", function (event) {
+              //var styleCss = "color: red; position: relative; bottom: 20px";
+              //var styleCss = "color: red; padding-bottom: 20px";
+              var styleCss = "position: absolute; top: 10px; left: 10px";
+
+              //drawLine('vertical', event.pageX, event.pageY, 30);
+              //drawLine('horizontal', event.pageX, event.pageY, 30);
+
+              event.target.style = styleCss;
+            });
+            words.item(i).addEventListener("mouseover", function (event) {
+              var styleCss = "cursor: pointer;";
+
+              event.target.style = styleCss;
+            }); 
+          }
+          
+          break;
+      }
+    });
+  });
+</script>
+
+<body>
+  <div id="test-block" style="width: 32px; height: 32px;"></div>
+  <pre style="width: 45%; float: right; border-left: 1px solid black;">
+    <ul id="ast-visualisation" class="ast"></ul>
+  </pre>
+<div style="width: 45%; float: left">
+    <pre id="console-output" style="width: 100%; height: 10em; border: 1px solid red; overflow: auto;">
+    </pre>
+    <h5>//CodeMirror here:</h5>
+    <textarea id="console-input" style="width: 100%; height: 15em; border: 1px solid red;">sequence[
+  define[
+    some-variable
+    conditional[
+      boolean[true]
+      number[3]
+      number[4]
+    ]
+  ]
+some-variable]
+    </textarea>
+    <button onclick="execute_and_visualise();">Execute</button>
+  </div>
+</body>
+</html>
