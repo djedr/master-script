@@ -1,0 +1,133 @@
+\chapter{Introduction}\label{chap:intro}
+%[[THIS IS VERY IMPORTANT -- should be readable]]}
+\section{Scope}
+The topics discussed in this thesis are:
+\begin{itemize}
+%\item Functional programming in general
+\item The application of functional programming in game development and related performance issues.
+\item Trends and predictions pertaining to the adoption of the functional paradigm in game development.
+\item \Gls{web_game} development in JavaScript and HTML5 and related performance considerations.
+\item Languages compiled to JavaScript.
+%\item Performance issues in (web) game development using functional languages. \js{To w sumie powtarza punkty 1 i 3.}
+\end{itemize}
+In practice I combine these topics by using Links\footnote{\url{http://groups.inf.ed.ac.uk/links/}} -- an experimental functional language compiled to JavaScript -- to write several web games. In the process, I benchmark the performance of the language and introduce optimizations to its runtime system to improve it.
+% Comparing the performance before and after optimizations makes up the quantitative result of the practical side of this thesis.
+
+The kind of optimizations that I will be talking about are mostly at the level of the programming language's runtime system~\cite{appel}.
+
+%\footnote{\url{http://en.wikipedia.org/wiki/Runtime_system}}
+%\clearpage
+
+This thesis investigates the practical application of functional programming languages and performance challenges that come with the choice of the functional paradigm for developing computer games.
+
+I examine performance by writing computer games of increasing complexity and looking at the \gls{frame_rate} that can be achieved. I then introduce and test the effectiveness of various optimizations to the language's runtime system and compiler. The goal is to achieve a satisfactory frame rate (ideally about 60 frames per second) in studied cases.
+
+%I analyze the performance of a functional language in developing computer games (particularly web games) and see what can be done to write this kind of applications effectively. \js{Mam poczucie, że to już było powiedziane wcześniej.}
+
+My specialization is Computer Simulation and Games Technology and I look at the problem from a game developer's standpoint, but the conclusions of this thesis may apply to any performance-intensive applications of functional programming languages.
+\clearpage
+
+\section{Choice of topic}
+%{\color{red} [justify the choice in detail]}
+I picked this topic, because I see big potential in functional languages and I predict that the languages used in video game industry will evolve towards being more functional as they incorporate more and more elements characteristic of this paradigm. I also think that it is worth to invest time and resources into working with a language that compiles to JavaScript -- and also with JavaScript -- as this area is rapidly developing and has a promising future.
+
+I was interested in the functional paradigm, design and implementation of programming languages and obviously game development for a long time, so doing this project was a good opportunity to combine together and learn more about these topics.
+
+I intend to explore the subjects of this thesis further and consider the choices I made a good starting point. An experimental and self-contained language like Links allowed me to observe closely the process of creating a programming language.
+%and I was able to easily introduce and study optimizations and other changes.
+% more easily than in non-research projects?
+
+\section{Existing solutions and literature}\label{sec:existing}% overview}
+% {\color{red} [the state of the field]}
+There are many languages that compile to JavaScript\footnote{\url{https://github.com/jashkenas/coffeescript/wiki/list-of-languages-that-compile-to-js}} and new ones are constantly being created. Also compilers, translators and similar tools for existing languages are being developed.
+% \footnote{transcompilers transpilers}
+
+Some of the languages feature the idea of tierlessness (code in them is compiled for both client and server) and are functional like Links -- Opa\footnote{\url{http://opalang.org/}}, Ur\footnote{\url{http://impredicative.com/ur/}}, Haste\footnote{\url{http://haste-lang.org/}} (which is a dialect of Haskell).
+
+Elm\footnote{\url{http://elm-lang.org/}} is a functional language intended for web programming that supports \gls{frprogramming} (\acrshort{frp}), which is a paradigm that could potentially be useful for developing games. The use of FRP in games has been explored in~\cite{munc_thesis}.
+
+Other functional languages compiled to JavaScript include OCaml, Haskell, LiveScript, Khepri, Roy, Agda, Idris.
+%\js{Haskell też: https://github.com/jashkenas/coffeescript/wiki/list-of-languages-that-compile-to-js\#haskell}
+% sources?
+
+%There are languages exploring ideas of static typing in JavaScript like TypeScript, Dart or UnityScript \footnote{\url{http://wiki.unity3d.com/index.php/UnityScript_versus_JavaScript}}
+
+Worth mention also are other interesting languages that compile or translate to JavaScript: Haxe\footnote{\url{http://haxe.org/}} (which can also be compiled to many other languages, such as ActionScript, C++, Java or Python), ClojureScript\footnote{\url{https://github.com/clojure/clojurescript}} (from Clojure\footnote{\url{http://clojure.org/}}), CoffeeScript\footnote{\url{http://coffeescript.org/}} (JavaScript with prettier syntax) and a large family of languages derived from it\footnote{\url{https://github.com/jashkenas/coffeescript/wiki/List-of-languages-that-compile-to-JS\#coffeescript-family--friends}}.
+
+It is also possible to generate JavaScript from existing languages, like C/C++ (via Emscripten\footnote{\url{http://kripken.github.io/emscripten-site/}}), Ruby (via Opal\footnote{\url{http://opalrb.org/}}) or PHP (via Uniter\footnote{\url{http://asmblah.github.io/uniter/}}).
+
+%For examples of games written in functional languages please refer to Chapter \ref{chap:teoria}, \ref{sec:game_examples}. \js{Raczej zbędne}
+
+Functional game programming is a developing field and the interest in creating games with this paradigm is increasing\footnote{See Chapter \ref{chap:teoria}, \ref{sec:game_examples} for examples of games written in functional languages.}, but it is still a niche area. My sources are mostly internet-based as there are not (yet) many books on topics I touch on in this thesis, which are largely of experimental and research nature.
+
+\section{The future of functional programming in game development}
+%\js{Tytuł sekcji nie do końca pasuje mi do zawartości. Zmieniłbym tytuł na coś w stylu "Functional programming in game development".}
+%[czy można rozwiązać problem inaczej?]
+%The subject is an active area of research.
+A few prominent figures in the video game industry have discussed the use of functional programming in the field.
+
+Tim Sweeney, the founder of Epic Games\footnote{\url{http://epicgames.com/}}, describes ``the next mainstream language'' -- a potential future programming language for game development with functional features -- in~\cite{sweeney}. Co-founder of id Software\footnote{\url{http://www.idsoftware.com}} John Carmack talks about the benefits of functional programming in game development~\cite{carmack_cpp, carmack_keynote, carmack_keynote2}. 
+%\js{Proszę zobaczyć jak zmieniłem cytowanie: jak jest kilka pod rząd to wstawiam do jednego cite'a. proszę też dbać o kolejność cytowań (było 6,5,7; jest 5,6,7. Ponadto przed cytowaniem powinna być spacja (najlepiej twarda spacja, czyli tylda. Proszę zrobić masowe zastąpienie}
+
+Many other game programmers and authors have expressed their interest and in the subject as well~\cite{aversa, hague1}.
+% todo: cite Hague and some other people perhaps
+
+From these discussions and observations we can predict that mainstream programming languages (not only those used in game development) will move towards being more functional as more and more functional features will be gradually introduced into them.
+
+In the nearest future we should see a more widespread adoption of the functional paradigm in existing languages~\cite{carmack_cpp} both in terms of style of writing code and in language features as new versions of languages emerge.
+
+\section{Challenges}
+The work that I did in the scope of this thesis certainly exercised my engineering skills. I had to put together a few broad theoretical subjects, some new to me. I had to add whatever was missing to the knowledge acquired with formal and informal learning in order to complete the goals I set for myself. Applying this knowledge in practice and achieving tangible results was quite a task.
+
+%The main challenge of this work is investigating and exploring a relatively new area of research. \js{Nie podoba mi się to zdanie. Zdaję sobie sprawę, że jest ono całkowicie prawdziwe: praca w dziedzinie będącej aktywnie rozwijanym obszarem badań jest niewątpliwe wyzwaniem. Niemniej jednak uważam, że nie należy się z tym zdradzać :-) i raczej skupić na trudnościach obiektywnych (ta wymieniona tutaj jest subiektywna).}
+Approaching the subject of the use of functional programming in game creation was particularly challenging as, compared to other game development-related topics, there is not very much material (especially practical) available about this one. Despite of some research being done in the area for a long time, it is still in an early stage of development (see Chapter \ref{chap:teoria}, \ref{sec:adoption}). 
+%Perhaps it is at the edge of accelerating development \js{sens tego zdania nie jest dla mnie jasny}. As it happened many times in the past with innovations that took a long time to adapt to the mainstream, \js{bez przecinka?} but in the end were beneficial .
+
+A more concrete challenge was working with an experimental language (Links) with almost no documentation available, which required me to reverse engineer whatever I needed to know in order to implement optimizations.
+%\js{Bardzo krótka zrobiła się ta sekcja po zmianach. Nie ma więcej do dodania?}
+
+%See Chapter \ref{chap:teoria} for details.
+
+\section{Thesis goals and contributions}\label{sec:cele_pracy}
+%[clear goals; concise and precise]
+The goals of this thesis are as follows:
+\begin{itemize}
+    \item Optimize the runtime system and possibly the compiler  of the Links language in order to achieve a satisfactory frame rate of at least 30 FPS in simple web games.
+    \item Decrease the performance gap between applications written in Links and their native JavaScript versions.
+    \item Create several computer games in Links using the functional paradigm; each of greater complexity than the previous.
+    \item Analyze and describe the process and challenges of game development using the functional approach. %and compare it to the conventional (imperative) process. 
+\end{itemize}
+
+My contribution to game development in functional languages is exploring its use and effectiveness -- specifically in web-based games -- by trying to assess and improve performance of a functional language compiled to JavaScript. 
+
+In Chapter \ref{chap:teoria} I provide the necessary theoretical background, describing game development in functional languages and the significant elements of the Links language.
+
+The practical side of this contribution is writing web games -- described in Chapter \ref{chap:badania} -- and improving the performance of the language in order to make them playable (Chapter \ref{chap:benchmark}\footnote{The basis of this chapter is the documentation that I created while working on my traineeship at the University of Edinburgh. Available for download here:\\ 
+\url{https://github.com/links-lang/links/blob/dariusz/documentation/performance3.pdf}.}). 
+I summarize the results and conclude in Chapter \ref{chap:podsumowanie}.
+The technologies, techniques and tools that I used are described in Chapter \ref{chap:narzedzia}.
+
+Appendix \ref{app:files} includes the description of all significant files that were used for performance benchmarking and optimization as well as describes the rest of the contents of the DVD attached to this thesis.
+
+%\section{Thesis structure}
+%{\color{red} REMEMBER TO UPDATE THIS IF THE STRUCTURE CHANGES. IN FACT, WRITE THIS LAST}
+%The remaining part of this thesis is structured in the following way:
+
+%Chapter \ref{chap:narzedzia} briefly describes the technologies, techniques and tools that I used: Links, JavaScript, the functional paradigm as well as my development toolchain.
+
+%Chapter \ref{chap:teoria} provides a theoretical background, describing game development in functional languages and the significant elements of the Links language.
+
+%Chapter \ref{chap:badania} talks about the design and implementation of the web games that I wrote in Links.
+
+%Chapter \ref{chap:benchmark} contains the description of the optimizations I performed as well as presents achieved results\footnote{The basis of this chapter is the documentation that I created while working on my traineeship at the University of Edinburgh. Available for download here:\\ \url{https://github.com/links-lang/links/blob/dariusz/documentation/performance3.pdf}.}.
+% should this be mentioned?
+
+%Chapter \ref{chap:podsumowanie} summarizes the results and concludes.
+
+%\ref{glossary} contains a glossary of some of the more technical terms.
+% this ref doesn't work
+
+%Appendix \ref{app:files} includes a description of all significant files that were used for performance benchmarking and optimization as well as describes the rest of the contents of the DVD attached to this thesis.
+
+%\js{Można spróbować zrobić sprytny manewr i połączyć tą sekcję z poprzednią. Tzn. jeśli w poprzendim punkcie opisze Pan contributions pracy to można jednocześnie odwoływać się do konkretnych rozdziałów. Widziałem taki trick w wielu artykułach o programowaniu funkcyjnym i sam też zresztą stosowałem. Proszę sobie ściągnąć z mojej strony artykuł z Haskell Symposium i spojrzeć na końcówkę pierwszej strony.}
+% list of figures?
