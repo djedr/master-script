@@ -115,15 +115,15 @@ function visualise(expression, environment) {
   
   switch (expression.type) {
     case "word":
-      result += '<div class="word">' + expression.name + '<input style="display: none" type="text" value="' + expression.name + '"/></div>';
+      result += '<div class="word" title="' + expression.name + '">' + expression.name + '<input style="display: none" type="text" value="' + expression.name + '"/></div>';
 
       return result;
     case "apply":
         var color = 7;//Math.floor(Math.random() * 5) + 5;
         var color2 = 8;//Math.floor(Math.random() * 5) + 5;
         var color3 = 9;//Math.floor(Math.random() * 5) + 5;
-      result += '<div class="operator" style="background-color: #' + color + color2 + color3 + '">' + visualise(expression.operator, environment)
-                + '<ul class="arguments" style="background-color: #' + (color-3) + (color2-2) + (color3-1) + '">';
+      result += '<div class="operator">' + visualise(expression.operator, environment)
+                + '<ul class="arguments">';
       
       if (expression.operator.name in specialFormsArgumentNames) {
           arg_names = specialFormsArgumentNames[expression.operator.name];
@@ -137,8 +137,7 @@ function visualise(expression, environment) {
                      expression.operator.name + '@' + i + ':' + (arg_names[i] || '(value)')
                     //+ '</small>')
                     ;
-        result += '<li title="' + title + '" class="argument" style="background-color: #'
-            + color + color2 + color3 + '">'
+        result += '<li title="' + title + '" class="argument">'
             + visualise(arg, environment) + '</li>';
       });
       
