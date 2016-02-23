@@ -113,23 +113,36 @@
 </script>
 
 <body>
-  <div id="test-block" style="width: 32px; height: 32px;"></div>
-  <pre style="width: 45%; float: right; border-left: 1px solid black;">
+  <div style="width: 45%; float: right;">
+  <h2>Visual editor stub</h2>
+  <h3>Just a demo. No real interactivity for now. You can click on nodes to make them change colors. Hovering over them resets the color. The code is read left to right, and top to bottom.</h3>
+  <pre style="border: 1px solid red; overflow: auto; width: 100%;">
     <ul id="ast-visualisation" class="ast"></ul>
   </pre>
+  </div>
 <div style="width: 45%; float: left">
+    <h2>Console output</h2>
     <pre id="console-output" style="width: 100%; height: 10em; border: 1px solid red; overflow: auto;"></pre>
-    <h5>//CodeMirror here:</h5>
+    <hr/>
+    <h2>Text editor</h2>
+    <h4>To be replaced by CodeMirror or the like. Edit the source to update the visualisation -- it will be updated as you type.</h4>
     <textarea id="console-input" style="width: 100%; height: 15em; border: 1px solid red;">sequence[
+  define[
+    five
+    number[5]
+  ]
   define[
     some-variable
     conditional[
-      boolean[true]
+      >[five 3]
       number[3]
       number[4]
     ]
   ]
-some-variable]
+  $[hello world]
+  $[note: the > operator is not implemented yet, so the condition is dummy]
+  $[there are true and false values though, so you can make the condition false by replacing >[five 3] by false]
+  some-variable]
     </textarea>
     <button onclick="execute_and_visualise();">Execute</button>
   </div>
