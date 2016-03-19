@@ -115,15 +115,20 @@ function visualise(expression, environment) {
   
   switch (expression.type) {
     case "word":
-      result += '<div class="word" title="' + expression.name + '">' + expression.name + '<input style="display: none" type="text" value="' + expression.name + '"/></div>';
+      result += `
+        <div class="word" title="${expression.name}" style="white-space: normal"> 
+            <div>
+                <div class="out-pin"></div><div class="name" style="position: relative;">${expression.name}</div><pre style="display: inline; background-color: #833;">${expression.postfix}</pre>
+            </div>
+        </div>`;
 
       return result;
     case "apply":
         var color = 7;//Math.floor(Math.random() * 5) + 5;
         var color2 = 8;//Math.floor(Math.random() * 5) + 5;
         var color3 = 9;//Math.floor(Math.random() * 5) + 5;
-      result += '<div class="operator">' + visualise(expression.operator, environment)
-                + '<ul class="arguments">';
+      result += `<div class="operator">${visualise(expression.operator, environment)}
+                    <ul class="arguments">`;
       
       if (expression.operator.name in specialFormsArgumentNames) {
           arg_names = specialFormsArgumentNames[expression.operator.name];
@@ -134,14 +139,19 @@ function visualise(expression, environment) {
         var color2 = 'a';//Math.floor(Math.random() * 5) + 5;
         var color3 = 'b';//Math.floor(Math.random() * 5) + 5;
         var title = //('<small style="color: #444">' + 
-                     expression.operator.name + '@' + i + ':' + (arg_names[i] || '(value)')
+                     `${expression.operator.name}@${i}:${arg_names[i] || '(value)'}`
                     //+ '</small>')
                     ;
-        result += '<li title="' + title + '" class="argument">'
-            + visualise(arg, environment) + '</li>';
+        //+ (arg_names[i] || i) +
+        result += `
+            <li title="${title}" class="argument">
+                <div class="in-pin">${i}</div>
+                <div class="connection" style="display: flex; z-index: 100;">${arg_names[i] || ''}</div>
+                ${visualise(arg, environment)}
+            </li>`;
       });
       
-      return result + '</ul></div>';
+      return `${result}</ul></div>`;
   }
 }
 

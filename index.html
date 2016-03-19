@@ -5,43 +5,85 @@
   
   <style>
     .ast, .ast ul, .ast li {
-      position: relative;
-      vertical-align: top;
+        position: relative;
+        vertical-align: top;
     }
     .ast ul {
-      list-style-type: none;
-      list-style-position: inside;
-      text-align: center;
-      margin: 0;
-      padding: 0;
+        list-style-type: none;
+        list-style-position: inside;
+        margin: 0;
+        padding: 0;
     }
     .ast ul li {
-      list-style-type: none;
-      list-style-position: inside;
-      margin: 0.1em;
-      padding: 0;
+        list-style-type: none;
+        list-style-position: inside;
+        margin: 0.1em;
+        padding: 0;
+        margin-top: 1.5em;
     }
     .argument, .operator {
-      display: inline-block; /* flex */
-    }
-    .operator {
-        text-align: center;
+        display: flex; /* inline-block|flex */
     }
     .word {
-      font-family: sans-serif;
-      font-size: 0.75em;
-      width: 100%;   
-      height: 100%;
-      text-align: center;
-      overflow: hidden;
-      text-shadow: 0px 0px 4px white;
-      margin: auto;
-      border: 1px solid #ccc;
-      display: block; /* inline-block */
-      border-radius: 10px;
-      padding: 0.1em;
-      color: #fff;
-      background-color: #222;
+        font-family: sans-serif;
+        font-size: 0.75em;
+        width: 100%;   
+        height: 100%;
+        overflow: hidden;
+        text-shadow: 0px 0px 4px white;
+        margin: auto;
+        border: 1px solid #141414;
+        display: block; /* inline-block */
+        border-radius: 0.5em;
+        color: #fff;
+        background-color: #282828;
+        min-height: 3em;
+        min-width: 2em;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+    }
+    .word[title="$"] + ul li {
+        display: inline-block;
+        margin: 0;
+        min-width: 0;
+    }
+    .word[title="$"] + ul li .word {
+        border-radius: 0;
+        border: 0;
+        padding: 0;
+        margin: 0;
+    }
+    .name {
+        background-color: rgba(0,0,0,0.5);
+        padding: 0.2em;
+        display: inline-block;
+        margin: 0;
+        -moz-user-select: none;
+        -webkit-user-select: none;
+        cursor: pointer;
+    }
+    .in-pin {
+        display: inline-block;
+        background-color: rgba(255, 255, 255, 0.5);
+        height: 1em;
+        min-width: 2em;
+        margin-left: -2.2em;
+        text-align: right;
+        border-radius: 10px 0 0 10px;
+    }
+    .out-pin {
+        display: inline;
+        background-color: rgba(255, 255, 255, 0.9);
+        width: 0.5em;
+        padding: 0.2em;
+        margin: 0;
+    }
+    .connection {
+        margin-top: 0.5em;
+        padding: 0 1em 0 1em;
+        border-top: 1px dashed black;
+        height: 1em;
+        display: flex;
     }
   </style>
 </head>
@@ -57,6 +99,7 @@
     var evaluated = evaluate(parsed, {});
     document.getElementById('ast-visualisation').innerHTML = visualise(parsed, {}, '0');
     ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #ff8888;\' />' + ']');
+    console.log(JSON.stringify(parsed));
   }
   
   function drawLine(type, x, y, length) {
@@ -72,10 +115,22 @@
   }
   
   window.addEventListener("load", function () {
-    var consoleInput = document.querySelector("#console-input")
+    var consoleInput = document.querySelector("#console-input");
+    
+    window.addEventListener("scroll", function () {
+        var i, words = document.querySelectorAll('.word'), top;
+        for (i = 0; i < words.length; ++i) {
+            top = words.item(i).getBoundingClientRect().top;
+            if (top < 0) {
+                words.item(i).querySelector('.name').style = "position: relative; top: " + (-top) + "px; color: rgba(255, 255, 255, 0.5)";
+            } else {
+                words.item(i).querySelector('.name').style = "position: relative; top: 0";
+            }
+        }
+    });
     
     consoleInput.addEventListener("keydown", function (event) {
-      var i, words;
+      var i, words, names;
       
       console.log(event.which);
       switch (event.which) {
@@ -86,26 +141,19 @@
         default:
           execute_and_visualise();
           words = document.querySelectorAll(".word");
+          names = document.querySelectorAll(".name");
           
-          console.log(words);
+          //console.log(words);
           
           for (i = 0; i < words.length; ++i) {
-            console.log(i);
-             words.item(i).addEventListener("click", function (event) {
-              //var styleCss = "color: red; position: relative; bottom: 20px";
-              //var styleCss = "color: red; padding-bottom: 20px";
-              var styleCss = "background-color: #" + (Math.random()*4+5|0) + (Math.random()*4+5|0) + (Math.random()*4+5|0);
-
-              //drawLine('vertical', event.pageX, event.pageY, 30);
-              //drawLine('horizontal', event.pageX, event.pageY, 30);
-
-              event.target.style = styleCss;
+            words.item(i).addEventListener("click", function (event) {
+              event.target.style.backgroundColor = "#" + (Math.random()*4+5|0) + (Math.random()*4+5|0) + (Math.random()*4+5|0);
             });
             words.item(i).addEventListener("mouseover", function (event) {
-              var styleCss = "cursor: pointer;";
+              //var styleCss = "cursor: pointer;";
 
-              event.target.style = styleCss;
-            }); 
+              //event.target.style = styleCss;
+            });
           }
           
           break;
@@ -114,23 +162,14 @@
   });
 </script>
 
-<body style="background-color: #ddd;">
-  <div style="width: 49%; float: right; background-color: #dcc;">
-    <h2>Visual editor stub</h2>
-    <h3>Just a demo. No real interactivity for now. You can click on nodes to make them change colors. Hovering over them resets the color. The code is read left to right, and top to bottom.</h3>
-    <pre style="border: 1px solid red; overflow: auto; width: 100%; background-color: #111;">
-        <ul id="ast-visualisation" class="ast"></ul>
-    </pre>
-  </div>
-  <div style="width: 49%; float: left;">
-    <div style="background-color: #cdc;">
-        <h2>Console output</h2>
-        <pre id="console-output" style="width: 100%; height: 10em; border: 1px solid red; overflow: auto;"></pre>
-    </div>
-    <div style="background-color: #ccd;">
+<body style="background-color: #ddd; padding: 0; margin: 0">
+    <p>Separate each module, arrange them in a modifiable grid</p>
+    <div><input type="text" value="" placeholder="Global Search: the only place to get everywhere" style="width: 100%" /></div>
+  <div style="width: 49%; height: 90vh; float: left; background-color: #000; padding: 0">
+    <div style="background-color: #ccd; height: 80%; margin: 0">
         <h2>Text editor</h2>
         <h4>To be replaced by CodeMirror or the like. Edit the source to update the visualisation -- it will be updated as you type.</h4>
-        <textarea id="console-input" style="width: 100%; height: 15em; border: 1px solid red;">sequence[
+        <textarea id="console-input" style="width: 100%; height: 60%; border: 1px solid red;">sequence[
   define[
     five
     number[5]
@@ -150,6 +189,27 @@
         </textarea>
         <button onclick="execute_and_visualise();">Execute</button>
     </div>
+    <div style="background-color: #cdc; height: 20%">
+        <h2>Console output</h2>
+        <h3>Should use browser's console as my console. This might show just the last output.</h3>
+        <h3>Or supply own console mimicking devtools (attached to bottom) and make it disappear and redirect output to standard console if devtools are open [http://stackoverflow.com/questions/7798748/find-out-whether-chrome-console-is-open]</h3>
+        <pre id="console-output" style="width: 100%; height: 100%; border: 1px solid red; overflow: auto;"></pre>
+    </div>
   </div>
+  
+  
+  <!--<div style="height: 2em; width: 100%; top: 0; left: 0; background-color: #000; position: fixed; z-index: 0"> </div>-->
+  
+  <div style="width: 49%; float: right; background-color: #dcc;">
+    <h2>Visual editor stub</h2>
+    <h3>Just a demo. No real interactivity for now. You can click on nodes to make them change colors. Hovering over them resets the color. The code is read left to right, and top to bottom.</h3>
+    <h3>Use PostCSS to style this</h3>
+    <pre style="border: 1px solid red; overflow: auto; width: 100%; background-color: #444;">
+        <ul class="ast">
+            <li id="ast-visualisation" class="argument"></li>
+        </ul>
+    </pre>
+  </div>
+  
 </body>
 </html>

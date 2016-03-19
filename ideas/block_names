@@ -1,0 +1,18 @@
+name of the block visible and its position fixed to the top of the screen if the block is visible and the top of the block is not
+on scroll: update block name positions
+
+pull element out of the flow: \out element
+
+relationships represented visually
+	connected blocks seem to be alright
+	
+	problem: structure
+	solution: autostructure it
+		allow user to customize though (if it's a desirable feature)
+
+--------
+| name |
+--------
+||arg0*--->
+||     |
+||arg1*|

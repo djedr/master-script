@@ -1,0 +1,31 @@
+def[]
+[this is a list]
+[this|is a|map]
+
+set[name value][a 5]
+set[[name value]]
+	[a        5]
+	
+set|[name value]|[a 5]
+set[|a 5]
+set[name value | a 5]
+set[name value]\[string int]\[a 5]
+[set \p name value \t string int \a a 5 \d some documentation]
+[set\a 5]
+set[a 5]
+set\properties[name value]\types[string int]\documentation[hello][a 5]
+
+set
+\.[name value]
+\:[string int]
+\\[hello bro]
+  [a 5]
+
+set
+\docus[hello bro sup namsayin]
+\names[name     value]
+\types[string     int]
+      [a            5]
+
+select parent
+add child

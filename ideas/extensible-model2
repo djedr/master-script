@@ -1,0 +1,70 @@
+if [ > [ a 2 ]
+	seq\--[then] [
+		print$ [a is large]
+	]
+	
+	seq\--[else] [
+		print$ [a is small]
+	]
+]
+
+if { > { a 2 }
+	seq\--{then} {
+		print$ {a is large}
+	}
+	
+	seq\--{else} {
+		print$ {a is small}
+	}
+}
+
+var [x 0]
+var [x\:[name] 0\:[value]]
+var [x\:\name 0\:\value]
+
+var\2\ x\:\name 0\:\value
+
+if\3\ >[a 2]
+	\--\then seq [
+		print$[a is large]
+	]
+	\--\else seq [
+		print\1\ $[a is small]
+	]
+
+if\3 >[a 2]
+	\-- then seq [
+		print\1 $[a is large]
+	]
+	\-- else seq [
+		print\1 $[a is small]
+	]
+
+if\# >[a 2]
+	\-- then seq [
+		print\! $[a is large]
+	]
+	\-- else seq [
+		print\! $[a is small]
+	]
+
+nah, just let it be numbers
+
+[[ meaning
+]] meaning
+\\ meaning
+\...\ meaning
+\... ...
+\...[]
+
+if 3\ >[a 2]
+	--\then seq [
+		print 1\$[a is large]
+	]
+	--\else seq [
+		print 1\$[a is small]
+	]
+
+[[doc]]
+\\ meta-meta
+\... ... single arg meta

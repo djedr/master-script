@@ -1,0 +1,16 @@
+[sequence|
+	[define|
+		name   |  five    
+		value  |  [number|5]
+	]    
+	[define|
+		name   |  some-variable    
+		value  |  [branch|
+			condition  |  [>|five 3]  
+			if-true    |  [number|8]   
+			if-false   |  [number|4]
+		]
+	]
+	[string|hello world]
+	some-variable
+]

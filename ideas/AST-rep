@@ -1,0 +1,7 @@
+mapp: map processing
+write straight in the parse tree
+hell, write in json
+	then parsing is JSON.parse
+or write in modified JSON
+	then parsing is transform to JSON -> JSON.parse
+
