@@ -2,6 +2,7 @@
 <html>
 <head> 
   <script src="src/main.ts"></script>
+  <link rel="stylesheet" href="styles.css" type="text/css" />
   
   <style>
     .ast, .ast ul, .ast li {
@@ -97,7 +98,9 @@
     var to_parse = document.getElementById('console-input').value;
     var parsed = parse(to_parse);
     var evaluated = evaluate(parsed, {});
-    document.getElementById('ast-visualisation').innerHTML = visualise(parsed, {}, '0');
+    
+    var rootRow = document.querySelector('.root-cell');
+    rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise(parsed, {}, '0');
     ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #ff8888;\' />' + ']');
     console.log(JSON.stringify(parsed));
   }
@@ -209,6 +212,16 @@
             <li id="ast-visualisation" class="argument"></li>
         </ul>
     </pre>
+    <div style="background-color: #181818; overflow: auto">
+        <table class="root-table">
+            <tr class="root-row">
+                <td class="input-connection-cell">
+                </td>
+                <td class="root-cell">
+                </td>
+            </tr>
+        </table>
+    </div>
   </div>
   
 </body>
