@@ -79,6 +79,22 @@ function parse(expression_string) {
   return result.expression;
 }
 
+function unparse(expression, environment) {
+  var op;
+  
+  switch (expression.type) {
+    case "word":
+      return expression.prefix + expression.name + expression.postfix;
+    case "apply":      
+      op = expression.prefix.slice(1) + unparse(expression.operator, environment) + '[';
+      
+      expression.args.map(function (arg) {
+        op += unparse(arg, environment);
+      });
+      return op + expression.postfix;
+  }
+}
+
 function evaluate(expression, environment) {
   var op;
   
@@ -118,56 +134,51 @@ function visualise(expression, environment) {
       result += `
         <span class="icon symbol-icon">${expression.name[0]}</span>
         <span>${expression.name}</span>
-        <span style="display: none">${expression.postfix}</span>
+        <span class="postfix">${expression.postfix}</span>
       `;
 
       return result;
     case "apply":
-        var color = 7;//Math.floor(Math.random() * 5) + 5;
-        var color2 = 8;//Math.floor(Math.random() * 5) + 5;
-        var color3 = 9;//Math.floor(Math.random() * 5) + 5;
       result += `
-        <!--<td class="output-connection-cell">
-			<div class="output-connection-div">
-				<span class="any-icon" style="width: 0.33em; height: 30%; position: absolute; top: 29%; left: 0em; display: inline-block; z-index: 5; border: 1px solid; border-right: 0; opacity: 0.66"></span>
-			
-				<span class="icon any-icon" style="margin-left: 0.33em; border-left: 1px solid;">a</span>
-				<span class="output-connection-name">any</span>
-			</div>
-        </td>
-        <td class="call-cell">-->
-            <table class="call-table">
-                <tr class="operator-row">
-                    <td class="operator-cell">
-                        <div class="operator-div">
-                            ${visualise(expression.operator, environment)}
-                        </div>
-                    </td>
-                    <!--<td class="input-connection-cell">
-                        <div class="input-connection-div">
-                            <span class="input-connection-name">function</span>
-                            <span class="icon any-icon" style="border-right: 1px solid;">f</span>
-                            
-                            <span class="any-icon" style="top: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-bottom: 1px solid; opacity: 0.66"></span>
-                            <span class="any-icon" style="bottom: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-top: 1px solid; opacity: 0.66"></span>
-                        </div>
-                    </td>-->
-                </tr>
-      `; // arguments
+        <tr class="operator-row">
+            <td class="operator-cell" style="border-top-right-radius: 0">
+                <div class="operator-div" style="border-top-right-radius: 0">
+                    ${expression.operator.type === `word` ?
+                        visualise(expression.operator, environment)
+                        : `<div style="text-align: center">&#x2190;</div>`
+                    }
+                </div>
+            </td>
+            ${expression.operator.type === `word` ?
+                ``
+                : `<td class="input-connection-cell" style="padding-top: 0">
+                    <div class="input-connection-div">
+                        <span class="input-connection-name">function</span>
+                        <span class="icon define-icon" style="border-right: 1px solid;">f</span>
+                        
+                        <span class="define-icon" style="top: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-bottom: 1px solid; opacity: 0.66"></span>
+                        <span class="define-icon" style="bottom: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-top: 1px solid; opacity: 0.66"></span>
+                    </div>
+                </td>
+                <td class="output-connection-cell" style="padding-top: 0">
+                    <div class="output-connection-div">
+                        <span class="define-icon" style="width: 0.33em; height: 30%; position: absolute; top: 29%; left: 0em; display: inline-block; z-index: 5; border: 1px solid; border-right: 0; opacity: 0.66"></span>
+                    
+                        <span class="icon define-icon" style="margin-left: 0.33em; border-left: 1px solid;">f</span>
+                        <span class="output-connection-name">function</span>
+                    </div>
+                </td>
+                <td style="margin-left: -100%"><table><tr><div>${visualise(expression.operator, environment)}</div></tr></table></td>`
+            }
+        </tr>`;
       
       if (expression.operator.name in specialFormsArgumentNames) {
           arg_names = specialFormsArgumentNames[expression.operator.name];
       }
           
       expression.args.map(function (arg, i) {
-        var color = '9';//Math.floor(Math.random() * 5) + 5;
-        var color2 = 'a';//Math.floor(Math.random() * 5) + 5;
-        var color3 = 'b';//Math.floor(Math.random() * 5) + 5;
-        var title = //('<small style="color: #444">' + 
-                     `${expression.operator.name}@${i}:${arg_names[i] || '(value)'}`
-                    //+ '</small>')
-                    ;
-        //+ (arg_names[i] || i) +
+        var title = `${expression.operator.name}@${i}:${arg_names[i] || `(value)`}`;
+        
         result += `
             <tr class="argument-row">
                 <td class="argument-cell">
@@ -183,7 +194,7 @@ function visualise(expression, environment) {
                         </tr>
                     </table>
                 </td>
-                <td class="input-connection-cell">
+                <td class="input-connection-cell" onclick="displayPrimitiveList(event)">
                     <div class="input-connection-div">
                         <span class="input-connection-name">any</span>
                         <span class="icon any-icon" style="border-right: 1px solid;">a</span>
@@ -201,35 +212,37 @@ function visualise(expression, environment) {
                     </div>
                 </td>
                 <td class="call-cell">
-                ${arg.type === 'word' ?
-                    `
-                    <table class="call-table">
+                    <table class="call-table" data-symbol="${arg.name ? arg.name : arg.operator.name ? arg.operator.name : ''}">
+                        ${arg.type === 'word' ? `
                         <tr class="operator-row">
                             <td class="operator-cell">
-                                <div class="operator-div">`
-                                    + visualise(arg, environment)
-                                + `
+                                <div class="operator-div">
+                                    ${visualise(arg, environment)}
                                 </div>
                             </td>
-                        </td>
-                    </table>`
-                    : visualise(arg, environment)}
+                        </tr>
+                        <tr class="argument-row">
+                            <td class="argument-cell argument-last-cell">
+                                <div class="gradient-div"></div>
+                            </td>
+                        </tr>`
+                        : visualise(arg, environment)}
+                    </table>
                 </td>
             </tr>`;
       });
       
       return `
-                ${result}
-                <tr class="argument-row">
-                    <td class="argument-cell argument-last-cell">
-						<div class="argument-div">
-							<span class="argument-name"></span>
-							<span class="icon plus-icon">+</span>
-						</div>
-					</td>
-                </tr>
-            </table>
-        <!--</td>-->`;
+        ${result}
+        <tr class="argument-row">
+            <td class="argument-cell argument-last-cell">
+                <div class="argument-div">
+                    <span class="argument-name"></span>
+                    <span class="icon plus-icon">+</span>
+                </div>
+                <div class="gradient-div"></div>
+            </td>
+        </tr>`;
   }
 }
 
@@ -382,7 +395,7 @@ specialForms["color-hex"] = function (args, env) {
 
 specialForms["log'"] = function (args, env) { 
     var value = specialForms["$"](args, env);
-    document.getElementById('console-output').innerHTML += value + '\n';
+    document.getElementById('console-output').innerHTML = value + '\n' + document.getElementById('console-output').innerHTML;
     
     console.log(document.getElementById('console-output').innerHTML);
 

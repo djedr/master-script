@@ -1,228 +1,167 @@
 <!doctype html>
 <html>
 <head> 
-  <script src="src/main.ts"></script>
   <link rel="stylesheet" href="styles.css" type="text/css" />
   
+  <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="node_modules/codemirror/theme/zenburn.css">
+  
+  <script src="src/main.ts"></script>
+  <script src="src/editor.ts"></script>
+  
+  <script src="node_modules/codemirror/lib/codemirror.js"></script>
+    <script src="node_modules/codemirror/mode/dual/dual.js"></script>
+    <script src="node_modules/codemirror/addon/selection/active-line.js"></script>
+    <script src="node_modules/codemirror/addon/edit/matchbrackets.js"></script>
+  
+  <title>Dual programming language editor</title>
+  
   <style>
-    .ast, .ast ul, .ast li {
-        position: relative;
-        vertical-align: top;
-    }
-    .ast ul {
-        list-style-type: none;
-        list-style-position: inside;
-        margin: 0;
-        padding: 0;
-    }
-    .ast ul li {
-        list-style-type: none;
-        list-style-position: inside;
-        margin: 0.1em;
-        padding: 0;
-        margin-top: 1.5em;
-    }
-    .argument, .operator {
-        display: flex; /* inline-block|flex */
-    }
-    .word {
-        font-family: sans-serif;
-        font-size: 0.75em;
-        width: 100%;   
-        height: 100%;
-        overflow: hidden;
-        text-shadow: 0px 0px 4px white;
-        margin: auto;
-        border: 1px solid #141414;
-        display: block; /* inline-block */
-        border-radius: 0.5em;
-        color: #fff;
-        background-color: #282828;
-        min-height: 3em;
-        min-width: 2em;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-    }
-    .word[title="$"] + ul li {
-        display: inline-block;
-        margin: 0;
-        min-width: 0;
-    }
-    .word[title="$"] + ul li .word {
-        border-radius: 0;
-        border: 0;
-        padding: 0;
-        margin: 0;
-    }
-    .name {
-        background-color: rgba(0,0,0,0.5);
-        padding: 0.2em;
-        display: inline-block;
-        margin: 0;
-        -moz-user-select: none;
-        -webkit-user-select: none;
-        cursor: pointer;
-    }
-    .in-pin {
-        display: inline-block;
-        background-color: rgba(255, 255, 255, 0.5);
-        height: 1em;
-        min-width: 2em;
-        margin-left: -2.2em;
-        text-align: right;
-        border-radius: 10px 0 0 10px;
-    }
-    .out-pin {
-        display: inline;
-        background-color: rgba(255, 255, 255, 0.9);
-        width: 0.5em;
-        padding: 0.2em;
-        margin: 0;
-    }
-    .connection {
-        margin-top: 0.5em;
-        padding: 0 1em 0 1em;
-        border-top: 1px dashed black;
-        height: 1em;
-        display: flex;
-    }
+      table, tr, td {
+          padding: 0;
+          margin: 0;
+          border: none;
+          border-spacing: 0;
+          border-collapse: collapse;
+      }
+      .master-table {
+          height: 100vh;
+          width: 100vw;
+          margin: auto;
+      }
+      .text-editor, .visual-editor {
+          width: 42vw;
+          height: 75%;
+          overflow: auto;
+      }
+      .menu-bar a {
+          margin-right: 1.5em;
+          background-color: #222;
+      }
+      
+      .console-bar {
+          background-color: #222;
+      }
+      
+      
+      .CodeMirror {
+          width: 42vw;
+          height: 75vh;
+          font-family: Consolas;
+      }
   </style>
 </head>
-
-<script>    
-  function ep (prog) {
-      return evaluate(parse(prog), {});
-  }
-
-  function execute_and_visualise() {
-    var to_parse = document.getElementById('console-input').value;
-    var parsed = parse(to_parse);
-    var evaluated = evaluate(parsed, {});
-    
-    var rootRow = document.querySelector('.root-cell');
-    rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise(parsed, {}, '0');
-    ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #ff8888;\' />' + ']');
-    console.log(JSON.stringify(parsed));
-  }
-  
-  function drawLine(type, x, y, length) {
-    var line = document.createElement("div"),
-        borderSide = type === "vertical" ? "left" : "top",
-        wh = type === "vertical" ? ["width", "height"] : ["height", "width"],
-        styleCss = "border-" + borderSide + ": 1px solid blue; position: absolute; top: "
-                    + y + "px; left: "
-                    + x + "px; " + wh[0] + ": 0px; " + wh[1] + ": " + length + "px";
-    
-    line.style = styleCss;
-    document.body.appendChild(line);
-  }
-  
-  window.addEventListener("load", function () {
-    var consoleInput = document.querySelector("#console-input");
-    
-    window.addEventListener("scroll", function () {
-        var i, words = document.querySelectorAll('.word'), top;
-        for (i = 0; i < words.length; ++i) {
-            top = words.item(i).getBoundingClientRect().top;
-            if (top < 0) {
-                words.item(i).querySelector('.name').style = "position: relative; top: " + (-top) + "px; color: rgba(255, 255, 255, 0.5)";
-            } else {
-                words.item(i).querySelector('.name').style = "position: relative; top: 0";
-            }
-        }
-    });
-    
-    consoleInput.addEventListener("keydown", function (event) {
-      var i, words, names;
-      
-      console.log(event.which);
-      switch (event.which) {
-        case 9:
-          event.preventDefault();
-          consoleInput.value += "\t";
-          break;   
-        default:
-          execute_and_visualise();
-          words = document.querySelectorAll(".word");
-          names = document.querySelectorAll(".name");
-          
-          //console.log(words);
-          
-          for (i = 0; i < words.length; ++i) {
-            words.item(i).addEventListener("click", function (event) {
-              event.target.style.backgroundColor = "#" + (Math.random()*4+5|0) + (Math.random()*4+5|0) + (Math.random()*4+5|0);
-            });
-            words.item(i).addEventListener("mouseover", function (event) {
-              //var styleCss = "cursor: pointer;";
-
-              //event.target.style = styleCss;
-            });
-          }
-          
-          break;
-      }
-    });
-  });
-</script>
-
-<body style="background-color: #ddd; padding: 0; margin: 0">
-    <p>Separate each module, arrange them in a modifiable grid</p>
-    <div><input type="text" value="" placeholder="Global Search: the only place to get everywhere" style="width: 100%" /></div>
-  <div style="width: 49%; height: 90vh; float: left; background-color: #000; padding: 0">
-    <div style="background-color: #ccd; height: 80%; margin: 0">
-        <h2>Text editor</h2>
-        <h4>To be replaced by CodeMirror or the like. Edit the source to update the visualisation -- it will be updated as you type.</h4>
-        <textarea id="console-input" style="width: 100%; height: 60%; border: 1px solid red;">sequence[
-  define[
-    five
-    number[5]
-  ]
-  define[
-    some-variable
-    conditional[
-      >[five 3]
-      number[3]
-      number[4]
+<body style="padding: 0; margin: 0; color: #ddd">
+    <table class="master-table">
+        <tr class="menu-bar">
+            <td colspan="3">
+                <div style="float: left"><a>File</a> <a>Edit</a> <a>View</a> <a>Goto</a> <a>Help</a></div>
+                <div style="float: right">
+                    Dual programming language editor
+                    <span class="icon symbol-icon">D</span>
+                </div>
+            </td>
+        </tr>
+        <tr class="search-bar">
+            <td colspan="3">
+                <input type="text"
+                    value=""
+                    placeholder="Global Search: find anything, including commands and options"
+                    style="width: 100vw; box-sizing: border-box; color: #ddd; background-color: #333; border: none" />
+            </td>
+        </tr>
+        <tr class="edit-bar">
+            <td rowspan="2" style="width: 16vw; background-color: #111">
+                <div style="width: 15vw; white-space: normal;">
+                    Visual scale:
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.25em';">[0.25em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.5em';">[0.5em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.75em';">[0.75em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1em';">[1em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.25em';">[1.25em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.5em';">[1.5em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.75em';">[1.75em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '2em';">[2em]</span>
+                </div>
+            </td>
+            <td class="text-editor">
+                <textarea id="console-input">
+sequence[
+    define[
+        five
+        number[5]
     ]
-  ]
-  $[hello world]
-  $[note: the > operator is not implemented yet, so the condition is dummy]
-  $[there are true and false values though, so you can make the condition false by replacing >[five 3] by false]
-  some-variable]
-        </textarea>
+    define[
+        some-variable
+        conditional[
+            >[five 3]
+            number[3]
+            number[4]
+        ]
+    ]
+    $[Edit the source to update the visualisation -- it will be updated as you type.]
+    $[hello world]
+    $[note: the > operator is not implemented yet, so the condition is dummy]
+    $[there are true and false values though, so you can make the condition false by replacing >[five 3] by false]
+    some-variable
+]
+                </textarea>
+            </td>
+            <td class="visual-editor">
+                <ul class="primitive-list" style="display: none">
+                    <li style="background-color: #300">cancel</li>
+                </ul>
+                <div style="background-color: #333; overflow: auto; background: url(noise.png) #333; height: 75vh; width: 42vw">
+                    <table class="root-table" style="font-size: 0.75em">
+                        <tr><tr></tr></tr>
+                        <tr class="root-row">
+                             <td class="input-connection-cell" onclick="displayPrimitiveList(event)">
+                                <div class="input-connection-div">
+                                    <span class="input-connection-name">any</span>
+                                    <span class="icon any-icon" style="border-right: 1px solid;">a</span>
+                                    
+                                    <span class="any-icon" style="top: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-bottom: 1px solid; opacity: 0.66"></span>
+                                    <span class="any-icon" style="bottom: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-top: 1px solid; opacity: 0.66"></span>
+                                </div>
+                            </td>
+                            <td class="output-connection-cell">
+                                <div class="output-connection-div">
+                                    <span class="any-icon" style="width: 0.33em; height: 30%; position: absolute; top: 29%; left: 0em; display: inline-block; z-index: 5; border: 1px solid; border-right: 0; opacity: 0.66"></span>
+                                
+                                    <span class="icon any-icon" style="margin-left: 0.33em; border-left: 1px solid;">a</span>
+                                    <span class="output-connection-name">any</span>
+                                </div>
+                            </td>
+                            <td class="root-cell" style="vertical-align: middle">
+                                <table class="root-call-table">
+                                    <tr><td><div style="margin-left: 1em">Click the root to start editing visually.</div></td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </td>
+        </tr>
+        <tr class="console-bar">
+            <td colspan="2">
+                <pre id="console-output" style="width: 100%; height: 15vh; overflow: auto;"><!--
+                    -->This is a simple console output. Open the browser's console for a more advanced console.
+<!--
+                --></pre>
+            </td>
+        </tr>
+        <tr class="status-bar">
+            
+        </tr>
+    </table>
+    <!--
         <button onclick="execute_and_visualise();">Execute</button>
-    </div>
-    <div style="background-color: #cdc; height: 20%">
-        <h2>Console output</h2>
-        <h3>Should use browser's console as my console. This might show just the last output.</h3>
-        <h3>Or supply own console mimicking devtools (attached to bottom) and make it disappear and redirect output to standard console if devtools are open [http://stackoverflow.com/questions/7798748/find-out-whether-chrome-console-is-open]</h3>
-        <pre id="console-output" style="width: 100%; height: 100%; border: 1px solid red; overflow: auto;"></pre>
-    </div>
-  </div>
-  
-  
-  <!--<div style="height: 2em; width: 100%; top: 0; left: 0; background-color: #000; position: fixed; z-index: 0"> </div>-->
-  
-  <div style="width: 49%; float: right; background-color: #dcc;">
-    <h2>Visual editor stub</h2>
-    <h3>Just a demo. No real interactivity for now. You can click on nodes to make them change colors. Hovering over them resets the color. The code is read left to right, and top to bottom.</h3>
-    <h3>Use PostCSS to style this</h3>
-    <pre style="border: 1px solid red; overflow: auto; width: 100%; background-color: #444;">
-        <ul class="ast">
-            <li id="ast-visualisation" class="argument"></li>
-        </ul>
-    </pre>
-    <div style="background-color: #181818; overflow: auto">
-        <table class="root-table">
-            <tr class="root-row">
-                <td class="input-connection-cell">
-                </td>
-                <td class="root-cell">
-                </td>
-            </tr>
-        </table>
-    </div>
-  </div>
-  
+        <h3>Or supply own console mimicking devtools (attached to bottom)
+            and make it disappear and redirect output to standard console
+            if devtools are open [http://stackoverflow.com/questions/7798748/find-out-whether-chrome-console-is-open]</h3>
+
+                <h3>Just a demo. No real interactivity for now. </h3>
+                <h3>Use PostCSS to style this</h3>
+-->  
 </body>
 </html>

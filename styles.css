@@ -1,7 +1,7 @@
 	body {
 		font-family: Consolas, monospace;
 		font-size: 13px;
-		background-color: #101010;
+		background-color: #000;
 	}
 	
 	/* tabular structure */
@@ -30,7 +30,7 @@
 		white-space: nowrap;
 	}
 	.argument-pin, .operator-pin {
-		background-color: #555;
+		background-color: #222;
 	}
 	.argument-pin {
 		border: 5px solid transparent;
@@ -64,7 +64,7 @@
 	}
 	.argument-pin-number, .operator-pin-name, .argument-pin-button { /* just pin? */
 		background-color: #ccc;
-		color: #333;
+		color: #111;
 	}
 	.argument-pin-number {
 		margin-left: 1em;
@@ -222,7 +222,7 @@
 		padding-top: 0.5em;
 	}
 	.operator-cell, .argument-cell {
-		background-color: #555;
+		background-color: #222;
 	}
 	.operator-cell {		
 		color: #bbb;
@@ -246,7 +246,7 @@
 	/* divs */
 	.operator-div, .argument-div, .add-argument-button-div {
 		background-color: #bbb;
-		color: #222;
+		color: #000;
 	}
 	.operator-description-div {
 		position: absolute;
@@ -270,12 +270,12 @@
 	}
 	.input-connection-div, .output-connection-div {
 		position: relative;
-		border-top: 1px solid #222;
+		border-top: 1px solid #000;
 		border-bottom: 1px solid #bbb;
 		border-left: 0;
 		border-right: 0;
 		background-color: #bbb;
-		color: #222;
+		color: #000;
 		/font-size: 0.75em;
 		vertical-algin: middle;
 		/margin-top: 0.125em
@@ -309,9 +309,7 @@
 	
 	.operator-div {
 		position: relative;
-		border: 1px solid #222;
-		border-bottom: 0;
-		border-left: 0;
+        border-top: 1px solid #000;
 	}
 	
 	.input-connection-name {
@@ -379,14 +377,14 @@
 	.argument-last-cell:after
 	{
 		color: #bbb;
-		background-color: #222;
+		background-color: #000;
 	}
 	
 	.input-connection-div:after,
 	.output-connection-div:after,
 	.operator-div:after,
 	.argument-div:before {
-		color: #222;
+		color: #000;
 		background-color: #bbb;
 	}
 	
@@ -467,15 +465,44 @@
 	}
 	
 	
-	.argument-cell {
+	.argument-cell, .operator-cell {
 		border-left: 1px solid #bbb;
-		border-right: 1px solid #222;
+		border-right: 1px solid #000;
 		position: relative;
+        box-shadow: 1px 0 1px #000;
+        background: linear-gradient(to right, rgb(64, 64, 64) 0, rgb(32, 32, 32) 0.5em);
 	}
+    .argument-last-cell {
+        position: relative;
+    }
+    .gradient-div {
+            height: 100%;
+            width: 100%;
+            position: absolute;
+            top: 1px;
+            left: 0;
+            background-image: linear-gradient(to top, rgba(64, 64, 64, 1) 0%, rgba(0, 0, 0, 0) 0.5em);
+        }
+    
+    .operator-div, .input-connection-div, .output-connection-div {
+        box-shadow: 0 -1px 1px #000;
+    }
+    
+    .operator-cell {
+		/border-top: 1px solid #000;
+    }
 	
 	.input-connection-div {
 		margin-left: -1px; /* taking border into account */
 	}
+	.output-connection-div {
+		margin-right: -1px; /* taking border into account */
+        z-index: 2;
+	}
+    
+    .input-connection-name, .output-connection-name {
+        display: none;
+    }
 	
 	.argument-div {
 		margin-top: 1px; /* taking border into account */
@@ -556,6 +583,43 @@
 	body.hide-icons .icon {
 		display: none;
 	}
+    
+    [data-symbol="$"] .argument-cell,
+    [data-symbol="$"] .argument-last-cell,
+    [data-symbol="$"] .input-connection-cell,
+    [data-symbol="$"] .output-connection-cell,
+    [data-symbol="$"] .icon {
+        display: none;
+    }
+    [data-symbol="$"] .operator-row,
+    [data-symbol="$"] .operator-div,
+    [data-symbol="$"] .operator-cell,
+    [data-symbol="$"] .call-table,
+    [data-symbol="$"] .call-cell,
+    [data-symbol="$"] .argument-row {
+        display: inline;
+        margin: 0;
+        padding: 0;
+    }
+    [data-symbol="$"] .call-cell {
+        margin-right: -0.75em;
+    }
+    [data-symbol="$"] .postfix {
+        display: inline-block;
+    }
+    
+    .primitive-list {
+        background-color: #000;
+        padding: 0;
+        cursor: pointer;
+    }
+    .primitive-list li {
+        list-style-type: none;
+        border-bottom: 1px solid #333;
+    }
+    .primitive-list li:hover {
+        background-color: #333;
+    }
 	
 	/* notes */
 	/*
