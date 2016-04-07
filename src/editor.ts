@@ -9,12 +9,13 @@ var editor,
             elm = document.createElement('li');
             elm.innerHTML = primitive;
             
+            // TODO: path instead of root row
             elm.addEventListener('click', (p => {
                 return _ => {
                     var rootRow = document.querySelector('.root-call-table');
                     var parsed = parse(p + '[]');
-                    rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise(parsed, {}, '0');
-                    editor.setValue(unparse(parsed));
+                    rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise_tree(parsed.tree, parsed.paths, {});
+                    editor.setValue(unparse_tree(parsed.tree, parsed.paths, {}));
                 }
             })(primitive));
             
@@ -26,14 +27,12 @@ var editor,
         });
     }
     
-    function displayPrimitiveList(event) {
+    function displayPrimitiveList(event, expression) {
         var rect = event.target.getBoundingClientRect();
         primitiveList.style.display = "block";
         primitiveList.style.position = "absolute";
         primitiveList.style.zIndex = "10";
         primitiveList.style.top = (rect.top | 0) + "px";
-        console.log(rect.top | 0);
-        console.log(rect.left | 0);
         primitiveList.style.left = (rect.left | 0) + "px";
     }
 
@@ -44,10 +43,10 @@ var editor,
     function execute_and_visualise() {
         var to_parse = editor.getValue();
         var parsed = parse(to_parse);
-        var evaluated = evaluate(parsed, {});
+        var evaluated = evaluate(parsed.expression, {});
         
         var rootRow = document.querySelector('.root-call-table');
-        rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise(parsed, {}, '0');
+        rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise_tree(parsed.tree, parsed.paths, {});
         ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #000;\' />' + ']');
         //console.log(JSON.stringify(parsed));
     }

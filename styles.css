@@ -501,7 +501,7 @@
 	}
     
     .input-connection-name, .output-connection-name {
-        display: none;
+        display: none; /* ENABLE TYPE NAMES: display: inline */
     }
 	
 	.argument-div {
@@ -620,6 +620,23 @@
     .primitive-list li:hover {
         background-color: #333;
     }
+
+    /* for presentation: implement something like this,
+     * just properly
+    .argument-last-cell .icon {
+        border-top-right-radius: 0.5em;
+        border-bottom-right-radius: 0.5em;
+    }
+
+    .argument-last-cell .argument-div {
+        display: none;
+    }
+
+    [data-symbol="sequence"] .argument-last-cell .argument-div,
+    .root-call-table > tbody > tr > .argument-last-cell > .argument-div {
+        display: block;
+    }
+     * end for presentation */
 	
 	/* notes */
 	/*
