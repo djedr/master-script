@@ -1,0 +1,94 @@
+define* [bind
+    macro* [a
+        macro* [b
+            code'|define* [{a b}]
+        ]
+    ]
+]
+bind [macro]
+| macro* [{args}
+    macro* [body
+        code'|macro* [{args body}]
+    ]
+]
+bind [if]
+| macro [{condition}]
+    | macro [{then}]
+        | macro [{else}]
+            | code'|if* [{condition} do[{then}] do[{else}]]
+bind [num]
+| macro [{args}]
+	| if [is-defined|args|1][
+        code'|{args|1}[number|{args|0} number|{args|2}]
+    ]
+    | code'|number|{args|0}
+
+bind [set]
+| macro [a op]
+	| macro [b]
+		| code'|mutate*[{a} {op}[{a b}]]
+bind [<-]
+| macro [a b]
+    | code'|do[{b}]
+
+bind [test]|number|2
+
+set [test <-]
+| if [false]
+	[num|32]
+| if [false]
+	[number|33]
+	[num[34 + 22]]
+
+bind [of]
+| macro [{args}]
+    | macro [{body}]
+        | macro [{alt}]
+	       | code'|functions* [args-list[{args}] do[{body}] {alt}]
+	       
+
+bind [match]
+| macro [{args}]
+	| macro [op]
+		| code'|{op}[{args}]
+
+bind [fact]
+| of [=|1] [1]
+| of   [n] [* [n fact|- [n 1]]]
+\
+
+-- here be
+fact[5]
+-- dragons
+
+bind [fib]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] [+[fib|-[n 1] fib|-[n 2]]]
+\
+
+fib[3]
+
+bind [x][5]
+
+match [x]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] ['[x greater than 2]]
+\
+
+-- match [x] [fib] -- like postfix notation
+
+-- functions*[of[] of[] of[]]
+
+-- match [true]
+-- | of [<[x 0]] ['[x is negative]]
+-- | of      [_] ['[x is not negative]]
+-- \
+
+-- bind [t]
+-- | if [>[a 0]] [a]
+-- | if      [_] [0]
+-- \
+		
+set-page['[<h1 style="color: white">iiii</h1>]]

@@ -1,120 +1,424 @@
 var editor,
-    primitiveList;
+    editor_raw,
+    doc,
+    primitiveList,
+    currentlySelectedExpression,
+    currentPath,
+    parsedProgram;
 
-    function initializePrimitiveList() {
-        var elm, primitive;
-        primitiveList = document.querySelector('.primitive-list');
-        
-        for (primitive in specialForms) {
-            elm = document.createElement('li');
-            elm.innerHTML = primitive;
-            
-            // TODO: path instead of root row
-            elm.addEventListener('click', (p => {
-                return _ => {
-                    var rootRow = document.querySelector('.root-call-table');
-                    var parsed = parse(p + '[]');
-                    rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise_tree(parsed.tree, parsed.paths, {});
-                    editor.setValue(unparse_tree(parsed.tree, parsed.paths, {}));
-                }
-            })(primitive));
-            
-            primitiveList.appendChild(elm);
+function run_() {
+    console.log(evaluate(parsedProgram, {
+        "true": true,
+        "false": false,
+        "undefined": undefined,
+        "is-defined": (a) => { return a !== undefined; },
+        "=": (a, b) => { return a === b; },
+        "+": (a, b) => { return a + b; },
+        "-": (a, b) => { return a - b; },
+        "*": (a, b) => { return a * b; },
+        "<": (a, b) => { return a < b; },
+        "<=": (a, b) => { return a <= b; },
+        "set-page": (str) => { document.getElementById("page").srcdoc = str; }
+    }));
+}
+
+function parse_() {
+    parse(editor.getValue());
+}
+
+function mark_expression(expression, start_pos, end_pos, extra) {
+    var marker =
+        doc.markText(
+            doc.posFromIndex(start_pos),
+            doc.posFromIndex(end_pos),
+            { className: (extra? extra: "argument-marker"), inclusiveRight: true }//, inclusiveLeft: true, }
+        );
+
+    marker.expression = expression;
+    expression.marker = marker;
+}
+
+function initializePrimitiveList() {
+    var elm, primitive, hints = [];
+    primitiveList = document.querySelector('.primitive-list');
+
+    elm = document.createElement('li');
+    elm.innerHTML = `<!--
+        --><div id="insert-raw-button" class="raw-button">insert raw</div><!--
+        --><div class="cancel-button">cancel</div><!--
+    -->`;
+    elm.querySelector("#insert-raw-button").addEventListener('click', _ => {
+        var marker_range = currentlySelectedExpression.expression.marker.find(),
+            marker_range_from_index = doc.indexFromPos(marker_range.from),
+            text = editor_raw.getValue(),
+            prefix = currentlySelectedExpression.expression.prefix;
+
+        if (currentlySelectedExpression.expression.type === 'word') {
+            prefix = currentlySelectedExpression.expression.prefix;
+        } else {
+            prefix = currentlySelectedExpression.expression.operator.prefix;
         }
-        
-        primitiveList.addEventListener('click', _ => {
-            primitiveList.style.display = "none";
-        });
-    }
-    
-    function displayPrimitiveList(event, expression) {
-        var rect = event.target.getBoundingClientRect();
-        primitiveList.style.display = "block";
-        primitiveList.style.position = "absolute";
-        primitiveList.style.zIndex = "10";
-        primitiveList.style.top = (rect.top | 0) + "px";
-        primitiveList.style.left = (rect.left | 0) + "px";
+
+        text = prefix + text;
+
+        // important to do this before replaceRange
+        // this must be done, because the marker is left and right inclusive and won't be cleared when its range is removed
+        currentlySelectedExpression.expression.marker.clear();
+        doc.replaceRange(text, marker_range.from, marker_range.to);
+
+        parse(text, {
+            character_index: marker_range_from_index,
+            expression: currentlySelectedExpression.expression,
+            from_index: marker_range_from_index,
+            to_index: marker_range_from_index + text.length,
+            id: currentlySelectedExpression.querySelector('.argument-id').textContent
+        }); // placeholders for arguments? do this completely differently?
+
+        primitiveList.style.display = "none";
+    });
+    primitiveList.appendChild(elm);
+
+    elm = document.createElement('li');
+    elm.innerHTML = `<!--
+        --><div class="raw-button clear-button">clear code</div><!--
+        --><div class="raw-button" title="if checked, code will be cleared each time the list is reopened">autoclear<input type="checkbox" style="margin: 0;"></input></div><!--
+    -->`;
+    elm.querySelector('.clear-button').addEventListener('click', _ => {
+        editor_raw.setValue("");
+    });
+    primitiveList.appendChild(elm);
+
+    elm = document.createElement('li');
+    elm.innerHTML = `<!--
+        --><div class="raw-button">?</div><!--
+        --><div class="raw-button" title="if checked, code will not be directly editable">read only<input type="checkbox" style="margin: 0;"></input></div><!--
+    -->`;
+    primitiveList.appendChild(elm);
+
+    elm = document.createElement('li');
+    elm.className = "raw-input";
+    elm.innerHTML = `<textarea></textarea>`;
+    primitiveList.appendChild(elm);
+
+    editor_raw = CodeMirror.fromTextArea(elm.getElementsByTagName("textarea")[0], {
+        lineNumbers: true,
+        placeholder: "Type code here.\nCtrl-Space autocompletes.",
+        extraKeys: { "Ctrl-Space": "autocomplete" },
+        autofocus: true,
+        styleActiveLine: true,
+        matchBrackets: true,
+        theme: 'zenburn'
+    });
+
+    editor_raw.setSize("40ex", "7em");
+
+    for (primitive in specialForms) {
+        var text = primitive,
+            args = "",
+            argNames = specialFormsArgumentNames[primitive],
+            i;
+
+        if (argNames) {
+            for (i = 0; i < argNames.length; ++i) {
+                args += `_${argNames[i]} `;
+            }
+            args = args.slice(0, -1);
+        } else {
+            args += `_`;
+        }
+        text += `[${args}]`;
+
+        hints.push({ text: text, displayText: primitive });
     }
 
-    function ep (prog) {
-        return evaluate(parse(prog), {});
+    CodeMirror.registerHelper("hint", "dual", function(editor, options) {
+        var cur = editor_raw.getCursor();
+        return { list: hints, from: cur, to: cur };
+    });
+    // CodeMirror.registerHelper("hintWords", "dual", hints);
+
+    primitiveList.querySelector('.cancel-button').addEventListener('click', _ => {
+        primitiveList.style.display = "none";
+    });
+}
+
+function displayPrimitiveList(event) {
+    var rect = event.target.getBoundingClientRect();
+    console.log(event.target);
+    event.stopPropagation();
+
+    currentlySelectedExpression = event.target;
+    while (currentlySelectedExpression.tagName !== "TR") {
+        currentlySelectedExpression = currentlySelectedExpression.parentElement;
     }
 
-    function execute_and_visualise() {
-        var to_parse = editor.getValue();
-        var parsed = parse(to_parse);
-        var evaluated = evaluate(parsed.expression, {});
-        
-        var rootRow = document.querySelector('.root-call-table');
-        rootRow.innerHTML = `<td class="input-connection-cell"></td>` + visualise_tree(parsed.tree, parsed.paths, {});
-        ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #000;\' />' + ']');
-        //console.log(JSON.stringify(parsed));
-    }
-    
-    function drawLine(type, x, y, length) {
-        var line = document.createElement("div"),
-            borderSide = type === "vertical" ? "left" : "top",
-            wh = type === "vertical" ? ["width", "height"] : ["height", "width"],
-            styleCss = "border-" + borderSide + ": 1px solid blue; position: absolute; top: "
-                        + y + "px; left: "
-                        + x + "px; " + wh[0] + ": 0px; " + wh[1] + ": " + length + "px";
-        
-        line.style = styleCss;
-        document.body.appendChild(line);
-    }
-    
-    window.addEventListener("load", function () {
-        editor = CodeMirror.fromTextArea(document.getElementById("console-input"), {
-            lineNumbers: true,
-            styleActiveLine: true,
-            matchBrackets: true,
-            theme: 'zenburn'
-        });       
-        
-        initializePrimitiveList();
-        
-        var consoleInput = document.querySelector("#console-input");
-        
-        window.addEventListener("scroll", function () {
-            var i, words = document.querySelectorAll('.word'), top;
-            for (i = 0; i < words.length; ++i) {
-                top = words.item(i).getBoundingClientRect().top;
-                if (top < 0) {
-                    words.item(i).querySelector('.name').style = "position: relative; top: " + (-top) + "px; color: rgba(255, 255, 255, 0.5)";
-                } else {
-                    words.item(i).querySelector('.name').style = "position: relative; top: 0";
+    primitiveList.style.display = "block";
+    primitiveList.style.position = "absolute";
+    primitiveList.style.zIndex = "10";
+    primitiveList.style.top = (rect.top | 0) + "px";
+    primitiveList.style.left = (rect.left | 0) + "px";
+    editor_raw.refresh();
+    editor_raw.execCommand("autocomplete");
+}
+argument_event_listener = displayPrimitiveList;
+
+function ep (prog) {
+    return evaluate(parse(prog), {});
+}
+
+function execute_and_visualise() {
+    var to_parse = editor.getValue();
+    var parsed = parse(to_parse);
+    var evaluated = evaluate(parsed.expression, {});
+    var visualised = visualise_tree(parsed.tree, parsed.paths, {});
+
+    console.log(parsed);
+    console.log(visualised);
+
+    var rootRow = document.querySelector('.root-call-table');
+    rootRow.innerHTML = `<td class="input-connection-cell"></td>${visualised}`;
+    //ep('log\'[' + evaluated + '\n<hr style=\'border: none; border-top: 1px solid #000;\' />' + ']');
+    //console.log(JSON.stringify(parsed));
+}
+
+window.addEventListener("load", function () {
+    var consoleInput = document.querySelector("#console-input");
+
+    editor = CodeMirror.fromTextArea(consoleInput, {
+        lineNumbers: true,
+        styleActiveLine: true,
+        matchBrackets: true,
+        theme: 'zenburn'
+    });
+    doc = editor.getDoc();
+    function readTextFile(file)
+    {
+        var rawFile = new XMLHttpRequest();
+        rawFile.open("GET", file, false);
+        rawFile.onreadystatechange = function ()
+        {
+            if(rawFile.readyState === 4)
+            {
+                if(rawFile.status === 200 || rawFile.status == 0)
+                {
+                    var allText = rawFile.responseText;
+                    editor.setValue(allText);
                 }
             }
-        });
-        
-        CodeMirror.on(editor, 'keydown', function (event) {
-        var i, words, names;
-        
-        console.log(event.which);
-        switch (event.which) {
-            case 9:
-            event.preventDefault();
-            consoleInput.value += "\t";
-            break;   
-            default:
-            execute_and_visualise();
-            words = document.querySelectorAll(".word");
-            names = document.querySelectorAll(".name");
-            
-            //console.log(words);
-            
-            for (i = 0; i < words.length; ++i) {
-                words.item(i).addEventListener("click", function (event) {
-                event.target.style.backgroundColor = "#" + (Math.random()*4+5|0) + (Math.random()*4+5|0) + (Math.random()*4+5|0);
-                });
-                words.item(i).addEventListener("mouseover", function (event) {
-                //var styleCss = "cursor: pointer;";
+        }
+        rawFile.send(null);
+    }
 
-                //event.target.style = styleCss;
-                });
+    readTextFile("./test-program.dual");
+
+    var start_stack = [];
+    var arg_start_stack = [];
+    var waiting = false;
+    var expr;
+    var from_index;
+    var to_index;
+
+    function getMarkObjAt(position, offset = 0) {
+        var token,
+            marks,
+            mark,
+            min,
+            expression,
+            vicinity,
+            index,
+            prevPos,
+            nextPos;
+        // token: Object { start: 18, end: 19, string: "[", type: "bracket", state: Object }
+
+        index = doc.indexFromPos(position);
+        prevPos = doc.posFromIndex(index - 1);
+        nextPos = doc.posFromIndex(index + 1);
+        vicinity = doc.getRange(prevPos, nextPos);
+        console.log('range:', `"${vicinity}"`);
+
+        // todo: cursor @ EOF
+        // todo: meta {} and stuff like [{}] and ]]
+        // vicinity === "[{" ->
+
+        if (vicinity[1] && vicinity[1].search(/\s/) !== -1) { // vicinity.search(/\S\s/)
+            position = prevPos;
+        }
+
+        if (vicinity !== "[{" && vicinity[0].search(/\[|\]|\{|\}/) !== -1) { // or just .search(/\]|\}/)
+            position = nextPos;
+        }
+
+        marks = doc.findMarksAt(position).filter(function (item) {
+            return item.className === 'argument-marker';
+        });
+
+        // picking shortest possible marker at given position
+        // bound with expression with a name that matches current token
+        min = Infinity;
+        var current = 0, ft;
+        for (var i = 0; i < marks.length; ++i) {
+            ft = marks[i].find();
+            current = doc.indexFromPos(ft.to) - doc.indexFromPos(ft.from);
+            if (current < min) {
+                min = current;
+                mark = marks[i];
             }
-            
+        }
+
+        console.log(mark);
+        //mark.className = "red-back";
+        //mark.css = "z-index: 100; position: absolute; top: 0; left: 0; color: red";
+
+        return { mark, offset };
+    }
+
+    doc.on('cursorActivity', (doc) => {
+        var mark = getMarkObjAt(doc.getCursor()).mark;
+
+        if (currentlySelectedExpression) {
+            currentlySelectedExpression.style.opacity = "1";
+            currentlySelectedExpression.expression.marker.css = "";
+            currentlySelectedExpression.expression.marker.changed();
+        }
+
+        currentlySelectedExpression = mark.expression.node;
+        mark.css = "opacity: 1; background-color: rgba(255, 255, 255, 0.1)";
+        editor.refresh();
+        currentlySelectedExpression.style.opacity = "0.5";
+
+    });
+
+    doc.on('beforeChange', (doc, { text, from, to, removed, origin }) => {
+        var { mark, offset } = getMarkObjAt(from),
+            name, token;
+
+        token = editor.getTokenAt(from); // get tokentypeat is way cheaper but returns just style
+        // token.string can be from expression
+
+        console.log('change');
+        console.log(text, from, to, removed, origin, token.start);
+
+        if (!origin) {
+            return;
+        }
+
+        if (mark.expression.type === 'word') {
+            name = token.string;
+            name = name.slice(0, from.ch - token.start) + text + name.slice(to.ch - token.start);
+            mark.expression.name = name;
+        } else {
+            name = token.string;
+            name = name.slice(0, from.ch - token.start) + text + name.slice(to.ch - token.start);
+            mark.expression.operator.name = name;
+        }
+        mark.expression.node.querySelector(".word").textContent = name;
+    });
+
+    listenEvent('parse:initialize', (event) => {
+        expr = event.expression;
+        from_index = event.from_index;
+        to_index = event.to_index;
+        console.log('event:', event);
+
+        start_stack.push(event.character_index);
+    });
+    listenEvent('parse:done', (event) => {
+        // wrap up markers
+        mark_expression(event.expression, start_stack.pop(), event.character_index);
+        console.log('parse:done');
+        parsedProgram = event.expression;
+        // doc.posFromIndex(event.character_index)
+    });
+    listenEvent('parse:apply-start', (event) => {
+        //start_stack.push(event.character_index); // TODO: make parser provide the character_index
+    });
+    listenEvent('parse:apply-end', (event) => {
+        // TODO: marker start and end will be different depending on whether parsing whole source or just a diff/fragment
+        //mark_expression(event.expression, start_stack.pop(), event.character_index);
+
+        /*marker.on('beforeCursorEnter', function () {
+            if (!waiting) {
+                console.log(marker.expression);
+                waiting = true;
+                setTimeout(_ => {
+                    waiting = false;
+                }, 1000);
+            }
+        });*/
+    });
+    listenEvent('parse:argument-start', (event) => {
+        arg_start_stack.push(event.character_index);
+    });
+    listenEvent('parse:argument-end', (event) => {
+        console.log('parse:arg', event, arg_start_stack);
+        mark_expression(event.expression, arg_start_stack.pop(), event.character_index);
+    });
+    // ... listen to parse:...
+    // make parser supply the events with string positions?
+
+    // TODO: make this sensible
+    listenEvent('visualise:done', (event) => {
+        var root;
+
+        if (expr) {
+            var row = event.result.querySelector('.argument-row');
+            var id = expr.node.querySelector('.argument-id').textContent; // TODO: could pass from parse
+            console.log('id:', id);
+
+            console.log('expr:', expr);
+            console.log('currentlySelectedExpression:', currentlySelectedExpression);
+            console.log('row.expression:', row.expression);
+            root = expr.node;
+            var parent = expr.node.parentElement;
+            while (parent.tagName !== 'TR') {
+                parent = parent.parentElement;
+            }
+            parent.expression.args[id] = row.expression;
+            console.log('parent.expression:', parent.expression);
+
+            //currentlySelectedExpression.expression = row.expression; // this is bull; should be parent
+            currentlySelectedExpression.parentElement.replaceChild(row, currentlySelectedExpression);
+            currentlySelectedExpression = row;
+
+            console.log(from_index, to_index);
+
+            setTimeout(_ => {
+                mark_expression(row.expression, from_index, to_index, 'red-back');
+            }, 1000);
+        } else {
+            root = document.querySelector(".root-cell");
+            root.replaceChild(event.result, root.firstChild);
+        }
+    });
+
+    console.log(parse(consoleInput.value));
+
+    // parse initial code
+    // parse callbacks?
+    // initialize markers accordingly
+
+    initializePrimitiveList();
+
+    editor.on('keypress', function (instance, event) {
+        var i;
+
+        console.log(event);
+        switch (event.charCode) {
+        case 91: // [
+            // var doc = editor.getDoc();
+            // var cursor = doc.getCursor();
+            // doc.replaceSelection('[]');
+            // event.preventDefault();
+            // var marker =
+            //     doc.markText(cursor, {line: cursor.line, ch: cursor.ch + 2}, { css: "background-color: rgba(255, 255, 255, 0.2)" });
+            // marker.path = "./0/1/3//" + Math.random();
+            // marker.on('beforeCursorEnter', function () {
+            //     console.log(marker.path);
+            // });
+            break;
+        default:
+            // execute_and_visualise();
             break;
         }
-        });
     });
+});

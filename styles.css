@@ -3,7 +3,7 @@
 		font-size: 13px;
 		background-color: #000;
 	}
-	
+
 	/* tabular structure */
 	.call {
 		display: table;
@@ -15,18 +15,18 @@
 	.argument-pin, .connection, .output-connection, .input-connection {
 		display: table-cell;
 	}
-	
+
 	/* table cells */
 	.connection-name {
 		border: 5px solid transparent;
 		border-image: url(border.png) 15 repeat;
 		border-left: 0;
 		border-right: 0;
-		
+
 		color: #bbb;
-		
+
 		margin-top: 1em;
-		
+
 		white-space: nowrap;
 	}
 	.argument-pin, .operator-pin {
@@ -37,13 +37,13 @@
 		border-image: url(border.png) 15 repeat;
 		border-top: 0;
 		border-bottom: 0;
-		
+
 		height: 100%
-		
+
 		color: #ffa;
-		
+
 		text-align: right;
-		
+
 		padding-right: 0;
 	}
 	.operator-pin {
@@ -51,15 +51,15 @@
 		border-image: url(border.png) 15 repeat;
 		border-bottom: 0;
 		border-left: 0;
-		
+
 		color: #bbb;
-		
+
 		padding-left: 0;
 	}
 	.last {
 		border-bottom: 5px solid transparent;
 		border-image: url(border.png) 15 repeat;
-		
+
 		text-align: center;
 	}
 	.argument-pin-number, .operator-pin-name, .argument-pin-button { /* just pin? */
@@ -76,29 +76,29 @@
 	}
 	.description-wrapper {
 		display: table;
-		
+
 		width: 100%;
 	}
 	.description {
 		display: table-caption;
-		
+
 		width: 100%;
-		
+
 		opacity: 0.5;
-		
+
 		color: #bbb;
-		
+
 		font-size: 0.75em;
 	}
 	.operator-description-wrapper {
 		display: table-cell;
-		
+
 		position: relative;
-		
+
 		width: 0;
-		
+
 		overflow: show;
-		
+
 		vertical-align: top;
 	}
 	.operator .description {
@@ -112,12 +112,12 @@
 	}
 	.argument-pin-number .icon {
 		float: right;
-		
+
 		margin-left: 0.25em;
 	}
 	.operator-pin-name .icon {
 		float: left;
-		
+
 		margin-right: 0.25em;
 	}
 	.output-connection .icon, .input-connection .icon {
@@ -129,7 +129,7 @@
 	.output-connection {
 		text-align: left;
 	}
-	
+
 	/* icons */
 	.define-icon {
 		background-color: #023;
@@ -188,11 +188,11 @@
 		height: 5px;
 		width: 100%;
 	}
-	
+
 	/*           */
 	/* ie styles */
 	/*           */
-	
+
 	/* tables */
 	.argument-description-table {
 		width: 1px; /* so it doesn't stretch the cell and instead the description overflows from it */
@@ -200,23 +200,23 @@
 	.call-table {
 		/width: 100%;
 	}
-	
+
 	/* captions */
 	.argument-description-cell {
 		width: 100%;
 		white-space: normal;
-		
+
 		color: rgb(255, 255, 255);
-		
+
 		text-align: right;
-		
+
 		font-size: 0.75em;
-		
+
 		zoom: 1;
 		filter: alpha(opacity=50);
 		opacity: 0.5;
 	}
-	
+
 	/* cells */
 	.call-cell, .argument-cell, .input-connection-cell, .output-connection-cell {
 		padding-top: 0.5em;
@@ -224,17 +224,17 @@
 	.operator-cell, .argument-cell {
 		background-color: #222;
 	}
-	.operator-cell {		
+	.operator-cell {
 		color: #bbb;
-		
+
 		padding-left: 0;
 	}
-	.argument-cell {		
+	.argument-cell {
 		text-align: right;
-		
+
 		padding-right: 0;
 	}
-	.argument-last-cell {		
+	.argument-last-cell {
 		text-align: center;
 		padding-top: 0;
 		padding-bottom: 1em;
@@ -242,7 +242,7 @@
 	.input-connection-cell {
 		text-align: right;
 	}
-	
+
 	/* divs */
 	.operator-div, .argument-div, .add-argument-button-div {
 		background-color: #bbb;
@@ -250,13 +250,13 @@
 	}
 	.operator-description-div {
 		position: absolute;
-		
+
 		width: 1000%;
-		
+
 		margin-left: 1em;
-		
+
 		font-size: 0.75em;
-		
+
 		zoom: 1;
 		filter: alpha(opacity=50);
 		opacity: 0.5;
@@ -297,52 +297,52 @@
 		border-top-right-radius: 0;
 		border-bottom-right-radius: 0;
 	}
-	
+
 	.output-connection-div .icon, .operator-div .icon {
 		border-top-left-radius: 0;
 		border-bottom-left-radius: 0;
 	}
-	
+
 	.argument-div {
 		position: relative;
 	}
-	
+
 	.operator-div {
 		position: relative;
         border-top: 1px solid #000;
 	}
-	
+
 	.input-connection-name {
 		margin-left: 0.5em;
 	}
-	
+
 	.output-connection-name {
 		margin-right: 0.5em;
 	}
-	
+
 	/*.input-connection-name, .output-connection-name {
 		display: none;
 	}
 	.operator-name, .argument-name {
 		display: none;
 	}
-	
+
 	.argument-cell, .argument-last-cell .argument-div, .input-connection-cell, .output-connection-cell, .call-cell {
 		padding: 0;
 		margin: 0;
 	}
-	
+
 	.argument-description-cell {
 		display: none;
 	}
-	
-	.argument-div, 
+
+	.argument-div,
 	.argument-last-cell .argument-div,
 	.argument-last-cell .argument-name {
 		margin: 0;
 		padding: 0;
 	}*/
-	
+
 	.input-connection-div:before,
 	.output-connection-div:before,
 	.input-connection-div:after,
@@ -354,22 +354,22 @@
 	.argument-last-cell:after {
 		display: none;
 		position: absolute;
-		
+
 		z-index: 2;
 		opacity: 0.66;
-		
+
 		width: 0.8em;
 		height: 0.8em;
-		
+
 		line-height: 1.2em;
-		
+
 		text-align: center;
-		
+
 		font-size: 1.3em;
-		
+
 		border-radius: 0.33em;
 	}
-	
+
 	.input-connection-div:before,
 	.output-connection-div:before,
 	.operator-div:before,
@@ -379,7 +379,7 @@
 		color: #bbb;
 		background-color: #000;
 	}
-	
+
 	.input-connection-div:after,
 	.output-connection-div:after,
 	.operator-div:after,
@@ -387,84 +387,84 @@
 		color: #000;
 		background-color: #bbb;
 	}
-	
+
 	.input-connection-div:before,
 	.output-connection-div:before,
 	.operator-div:before {
 		bottom: -0.5em;
 		left: -0.5em;
 	}
-	
+
 	.argument-div:before,
 	.input-connection-div:after,
 	.output-connection-div:after {
 		top: -0.5em;
 		right: -0.5em;
 	}
-	
+
 	.output-connection-div:before,
 	.input-connection-div:after,
 	.output-connection-div:after {
 		line-height: 0.7em;
 	}
-	
+
 	.input-connection-div:after,
 	.output-connection-div:after {
 		content: "\2192";
 	}
-	
+
 	.input-connection-div:before {
 		content: "\2935";
-		
+
 		-ms-transform: scaleX(-1);
 		transform: scaleX(-1);
 	}
-	
+
 	.output-connection-div:before {
 		content: "\2190";
 	}
-	
+
 	.operator-div:before {
 		content: "\2936";
-		
+
 		transform: scaleY(-1);
 		-ms-transform: scaleY(-1);
 	}
-	
+
 	.operator-div:after {
 		content: "\2935";
-		
+
 		top: -0em;
 		right: -0em;
 	}
-	
+
 	.argument-div:before {
 		content: "\2937";
 	}
-	
+
 	.argument-last-cell:before {
 		content: "\2934";
-		
+
 		transform: scaleX(-1);
 		-ms-transform: scaleX(-1);
-		
+
 		bottom: 0em;
 		left: 0em;
 	}
-	
+
 	.argument-last-cell:after {
 		content: "\2936";
-		
+
 		bottom: 0em;
 		right: 0em;
 	}
-	
+
 	.argument-last-cell .argument-div:before {
 		content: "";
 		background-color: transparent;
 	}
-	
-	
+
+
 	.argument-cell, .operator-cell {
 		border-left: 1px solid #bbb;
 		border-right: 1px solid #000;
@@ -483,15 +483,15 @@
             left: 0;
             background-image: linear-gradient(to top, rgba(64, 64, 64, 1) 0%, rgba(0, 0, 0, 0) 0.5em);
         }
-    
+
     .operator-div, .input-connection-div, .output-connection-div {
         box-shadow: 0 -1px 1px #000;
     }
-    
+
     .operator-cell {
 		/border-top: 1px solid #000;
     }
-	
+
 	.input-connection-div {
 		margin-left: -1px; /* taking border into account */
 	}
@@ -499,11 +499,11 @@
 		margin-right: -1px; /* taking border into account */
         z-index: 2;
 	}
-    
+
     .input-connection-name, .output-connection-name {
         display: none; /* ENABLE TYPE NAMES: display: inline */
     }
-	
+
 	.argument-div {
 		margin-top: 1px; /* taking border into account */
 	}
@@ -511,30 +511,30 @@
 	.argument-last-cell {
 		border-bottom: 1px solid #bbb;
 	}
-	
+
 	.operator-name {
 		margin-right: 1em;
 	}
-	
-	.argument-name {
+
+	.argument-name, .argument-id {
 		margin-left: 0.5em;
 	}
-	
-	
+
+
 	.operator-return-div {
 		position: absolute;
 		left: -0.33em;
 		bottom: -0.5em;
-		
+
 		color: #bbb;
-		
+
 		font-size: 1.2em;
 		z-index: 100;
-		
+
 		transform: rotate(90deg) scaleX(-1);
 		-ms-transform: rotate(90deg) scaleX(-1);
 	}
-	
+
 	.operator-div, .operator-name, .operator-cell {
 		border-top-right-radius: 0.33em;
 	}
@@ -542,31 +542,31 @@
 		border-bottom-right-radius: 0.33em;
 		border-bottom-left-radius: 0.33em;
 	}
-	
+
 	.argument-div {
 		border-top-left-radius: 0.33em;
 		border-bottom-left-radius: 0.33em;
 	}
-	
-	.argument-last-cell .argument-name {
+
+	.argument-last-cell .argument-name, .argument-last-cell .argument-id {
 		display: none;
 	}
-	
+
 	.argument-last-cell .argument-div {
 		border-top-right-radius: 0.33em;
 		border-bottom-right-radius: 0.33em;
 	}
-	
+
 	.input-connection-div {
 		/border-top-right-radius: 0.33em;
 		/border-bottom-right-radius: 0.33em;
 	}
-	
+
 	.output-connection-div {
 		/border-top-left-radius: 0.33em;
 		/border-bottom-left-radius: 0.33em;
 	}
-	
+
 	body.show-arrows .input-connection-div:before,
 	body.show-arrows .output-connection-div:before,
 	body.show-arrows .operator-div:before,
@@ -575,15 +575,15 @@
 	body.show-arrows *:after {
 		display: block;
 	}
-	
+
 	body.show-icons .icon {
 		display: inline;
 	}
-	
+
 	body.hide-icons .icon {
 		display: none;
 	}
-    
+
     [data-symbol="$"] .argument-cell,
     [data-symbol="$"] .argument-last-cell,
     [data-symbol="$"] .input-connection-cell,
@@ -607,7 +607,7 @@
     [data-symbol="$"] .postfix {
         display: inline-block;
     }
-    
+
     .primitive-list {
         background-color: #000;
         padding: 0;
@@ -637,7 +637,7 @@
         display: block;
     }
      * end for presentation */
-	
+
 	/* notes */
 	/*
 	 * class naming:
