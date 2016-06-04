@@ -1,0 +1,455 @@
+<!doctype html>
+<html>
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <link rel="stylesheet" href="styles.css" type="text/css" />
+
+    <link rel="stylesheet" href="node_modules/codemirror/lib/codemirror.css">
+    <link rel="stylesheet" href="node_modules/codemirror/theme/zenburn.css">
+    <link rel="stylesheet" href="node_modules/codemirror/addon/hint/show-hint.css">
+
+    <script src="src/external.ts"></script>
+    <script src="src/events.ts"></script>
+    <script src="src/main.ts"></script>
+    <script src="src/editor.ts"></script>
+
+    <script src="node_modules/codemirror/lib/codemirror.js"></script>
+    <script src="src/dual.js"></script>
+    <script src="node_modules/codemirror/mode/dual/dual.js"></script>
+    <script src="node_modules/codemirror/addon/display/placeholder.js"></script>
+    <script src="node_modules/codemirror/addon/hint/show-hint.js"></script>
+    <script src="node_modules/codemirror/addon/hint/anyword-hint.js"></script>
+    <script src="node_modules/codemirror/addon/selection/active-line.js"></script>
+    <script src="node_modules/codemirror/addon/edit/matchbrackets.js"></script>
+
+    <title>Dual programming language editor</title>
+
+    <style>
+        table, tr, td {
+            padding: 0;
+            margin: 0;
+            border: none;
+            border-spacing: 0;
+            border-collapse: collapse;
+        }
+        .master-table {
+            height: 100vh;
+            width: 100vw;
+            margin: auto;
+        }
+        .text-editor, .visual-editor {
+            width: 42vw;
+            height: 75%;
+            overflow: auto;
+        }
+        .menu-bar a {
+            margin-right: 1.5em;
+            background-color: #222;
+        }
+
+        .console-bar {
+            background-color: #222;
+        }
+
+
+        .CodeMirror {
+            width: 42vw;
+            height: 75vh;
+            font-family: Consolas, monospace;
+        }
+        #text-input {
+            display: none;
+        }
+
+        .CodeMirror-hints {
+            width: 20em;
+        }
+        .CodeMirror-hint:hover {
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+
+        .red-back {
+            background-color: red;
+        }
+        .apply-marker {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .argument-marker {
+            opacity: 0.7;
+        }
+
+        .cancel-button {
+            background-color: #300;
+        }
+        .raw-button {
+            background-color: #002;
+        }
+        .cancel-button, .raw-button {
+            display: inline-block;
+            width: 50%;
+            text-align: center;
+        }
+
+        .cancel-button:hover, .raw-button:hover {
+            background-color: #242;
+        }
+
+        .cm-s-zenburn span.cm-number { color: #80ff80; }
+        .cm-s-zenburn span.cm-bind { color: #a8a8ff; }
+        .cm-s-zenburn span.cm-predefined { color: #a8ffff; }
+        .cm-s-zenburn span.cm-arithmetic { color: #ffa8a8; }
+        .cm-s-zenburn span.cm-logic { color: #ffa8ff; }
+        .cm-s-zenburn span.cm-meta {
+            -moz-filter: saturate(30%);
+            -webkit-filter: saturate(30%) hue-rotate(90deg);
+            filter: saturate(30%);
+        }
+        .cm-s-zenburn span.cm-variable { color: #ffffaa; }
+        .cm-s-zenburn span.cm-bracket { color: #eeeeee; }
+        .cm-s-zenburn span.cm-error { color: #ff8888; }
+        .cm-s-zenburn span.cm-invocation0 { color: #ffbbbb; }
+        .cm-s-zenburn span.cm-access-or-assign { color: #ff44ff; }
+
+        .breakpoint {
+            -webkit-filter: saturate(200%);
+            -moz-filter: saturate(200%);
+            filter: saturate(200%);
+        }
+        .cm-single-word {
+
+            -webkit-filter: hue-rotate(22deg) saturate(150%);
+            -moz-filter: hue-rotate(22deg) saturate(150%);
+            filter: hue-rotate(22deg) saturate(150%);
+        }
+    </style>
+</head>
+<body style="padding: 0; margin: 0; color: #ddd">
+    <table class="master-table">
+        <tr class="menu-bar">
+            <td colspan="3">
+                <div style="float: left"><a>File</a> <a>Edit</a> <a>View</a> <a>Goto</a> <a>Help</a></div>
+                <div style="float: right">
+                    Dual programming language editor
+                    <span class="icon symbol-icon">D</span>
+                </div>
+            </td>
+        </tr>
+        <tr class="search-bar">
+            <td colspan="3">
+                <input type="text"
+                    value=""
+                    placeholder="Global Search: find anything, including commands and options"
+                    style="width: 100vw; box-sizing: border-box; color: #ddd; background-color: #333; border: none" />
+            </td>
+        </tr>
+        <tr class="edit-bar">
+            <td rowspan="2" style="width: 16vw; background-color: #111">
+                <div style="width: 15vw; white-space: normal;">
+                    Visual scale:
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.25em';">[0.25em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.5em';">[0.5em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.75em';">[0.75em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1em';">[1em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.25em';">[1.25em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.5em';">[1.5em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.75em';">[1.75em]</span>
+                    <span onclick="document.querySelector('.root-table').style.fontSize = '2em';">[2em]</span>
+                    <span onclick="run_()">[RUN]</span>
+                    <span onclick="parse_()">[PARSE]</span>
+                    <span onclick="document.querySelector('#visual-representation').style.display = 'none'; document.querySelector('#page').style.display = 'block';">[SHOW PAGE]</span>
+                </div>
+            </td>
+            <td class="text-editor" style="overflow: auto; max-height: 75%">
+                <div style="width: 42vw; height: 75vh; overflow: auto; position: relative; display: none">
+                    <style>
+                        #text-input span.line:before {
+                            counter-increment: line;
+                            content: counter(line);
+                            display: inline-block;
+                            border-right: 1px solid #ddd;
+                            padding: 0 .5em;
+                            margin-right: .5em;
+                            color: #888
+                        }
+                        .scope {
+                            padding-left: 12px;
+                            display: block;
+                            cursor: text;
+                        }
+                        .scope::before {
+                            content: '[';
+                        }
+                        .scope::after {
+                            content: ']';
+                        }
+                    </style>
+                    <script>
+                        var currentTextNode, dummyCounter = 0;
+                        addEventListener('load', _ => {
+                            var textInput = document.getElementById("text-input");
+
+                            currentTextNode = document.getElementById("root-node");
+                            currentTextNode.focus();
+
+                            textInput.addEventListener('click', _ => {
+                                //currentTextNode.focus();
+                            });
+
+                            textInput.addEventListener('paste', (event) => {
+                                var pastedText = undefined;
+
+                                event.preventDefault();
+
+                                if (window.clipboardData && window.clipboardData.getData) { // IE
+                                    pastedText = window.clipboardData.getData('Text');
+                                } else if (event.clipboardData && event.clipboardData.getData) {
+                                    pastedText = event.clipboardData.getData('text/plain');
+                                }
+                                console.log(parse(pastedText)); // Process and handle text...
+                            });
+
+                            textInput.addEventListener('keypress', (event) => {
+                                console.log(event);
+                                switch (event.keyCode) {
+                                case 9: // tab
+                                    event.preventDefault();
+                                    document.execCommand('insertText', false, '\t');
+                                    // TODO: indent selection
+                                    break;
+                                case 13: // enter
+                                    //event.preventDefault();
+                                    //document.execCommand('insertHTML', false, '<br><span class="line"></span>');
+                                    break;
+                                case 8: //backspace
+                                    var characterToDelete = '?'; // TODO: initialize this
+                                    switch (characterToDelete) {
+                                    case ' ': // TODO: other whitespace
+                                        // merged two names into one or nothing
+                                        break;
+                                    case '[':
+                                        // destroyed a scope
+                                        break;
+                                    case ']':
+                                        // destroyed a scope
+                                        break;
+                                    case '\\':
+                                        // broke special
+                                        break;
+                                    default:
+                                        // edited existing name: removed a character
+                                        break;
+                                    }
+                                    break;
+                                }
+
+                                switch (event.charCode) {
+                                case 32: // (space) -- TODO: other whitespace characters
+                                    // inserted new name, broken a name in two or nothing (depending on context)
+                                    break;
+                                case 91: // [
+                                    // opened new scope
+                                    // add ] and parse current name with [] and insert into AST
+                                    // TODO: id is path
+                                    event.preventDefault();
+                                    //document.execCommand('insertHTML', false, `<span id="" class= tabindex="0" contenteditable="true"></span>`);
+
+                                    var node = document.createElement("span");
+                                    node.id = `newTextNode-${dummyCounter}`;
+                                    node.className = "scope";
+                                    node.tabIndex = "0";
+                                    node.contentEditable = true;
+                                    insertNode(node);
+                                    currentTextNode.contentEditable = false;
+                                    currentTextNode.style.backgroundColor = "#000";
+                                    setTimeout(_ => {
+                                        currentTextNode = document.getElementById(`newTextNode-${dummyCounter}`);
+                                        ++dummyCounter;
+                                        currentTextNode.addEventListener('focus', (event) => {
+                                            //event.stopPropagation();
+                                            console.log("prev:");
+                                            console.log(currentTextNode);
+                                            currentTextNode.contentEditable = false;
+                                            currentTextNode.style.backgroundColor = "#000";
+                                            event.target.contentEditable = true;
+                                            event.target.style.backgroundColor = "#222";
+                                            currentTextNode = event.target;
+                                            console.log(currentTextNode);
+                                        });
+                                        currentTextNode.focus();
+                                    }, 0);
+                                    break;
+                                case 93: // ]
+                                    // closed scope
+                                    break;
+                                case 92: // \
+                                    // introducing special
+                                    break;
+                                default:
+                                    // edited exisiting name: added a character
+                                    break;
+                                }
+                            })
+                        });
+                    </script>
+                    <div id="text-input" style="width: 40vw; height: 100%; counter-reset: line;"><!--
+                        --><pre id="root-node" contenteditable="true"></pre><!--
+                    --></div>
+                </div>
+                <textarea id="console-input">
+define* [bind
+    macro* [a
+        macro* [b
+            code'|define* [{a b}]
+        ]
+    ]
+]
+bind [macro]
+| macro* [{args}
+    macro* [body
+        code'|macro* [{args body}]
+    ]
+]
+bind [if]
+| macro [{condition}]
+    | macro [{then}]
+        | macro [{else}]
+            | code'|if* [{condition} do[{then}] do[{else}]]
+bind [num]
+| macro [{args}]
+	| if [is-defined|args|1][
+        code'|{args|1}[number|{args|0} number|{args|2}]
+    ]
+    | code'|number|{args|0}
+
+bind [set]
+| macro [a op]
+	| macro [b]
+		| code'|mutate*[{a} {op}[{a b}]]
+bind [<-]
+| macro [a b]
+    | code'|do[{b}]
+
+bind [test]|number|2
+
+set [test <-]
+| if [false]
+	[num|32]
+| if [false]
+	[number|33]
+	[num[34 + 22]]
+
+bind [of]
+| macro [{args}]
+    | macro [{body}]
+        | macro [{alt}]
+	       | code'|functions* [args-list[{args}] do[{body}] {alt}]
+
+
+bind [match]
+| macro [{args}]
+	| macro [op]
+		| code'|{op}[{args}]
+
+bind [fact]
+| of [=|1] [1]
+| of   [n] [* [n fact|- [n 1]]]
+\
+
+-- here be
+fact[5]
+-- dragons
+
+bind [fib]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] [+[fib|-[n 1] fib|-[n 2]]]
+\
+
+fib[3]
+
+bind [x][5]
+
+match [x]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] ['[x greater than 2]]
+\
+
+-- match [x] [fib] -- like postfix notation
+
+-- functions*[of[] of[] of[]]
+
+-- match [true]
+-- | of [<[x 0]] ['[x is negative]]
+-- | of      [_] ['[x is not negative]]
+-- \
+
+-- bind [t]
+-- | if [>[a 0]] [a]
+-- | if      [_] [0]
+-- \
+
+bind [xx] ['[hiho]]
+set-page['[&lt;h1 style="color: white">{xx}&lt;/h1>]]
+                </textarea>
+            </td>
+            <td class="visual-editor">
+                <ul class="primitive-list" style="display: none">
+                </ul>
+                <div id="visual-representation" style="background-color: #333; overflow: auto; background: url(noise.png) #333; height: 75vh; width: 42vw">
+                    <table class="root-table" style="font-size: 0.75em">
+                        <tr><tr></tr></tr>
+                        <tr class="root-row">
+                             <td class="input-connection-cell" onclick="displayPrimitiveList(event)">
+                                <div class="input-connection-div">
+                                    <span class="input-connection-name">any</span>
+                                    <span class="icon any-icon" style="border-right: 1px solid;">a</span>
+
+                                    <span class="any-icon" style="top: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-bottom: 1px solid; opacity: 0.66"></span>
+                                    <span class="any-icon" style="bottom: 0; width: 0.33em; height: 28%; right: -0.33em; position: absolute; display: inline-block; z-index: 5; border-right: 1px solid; border-top: 1px solid; opacity: 0.66"></span>
+                                </div>
+                            </td>
+                            <td class="output-connection-cell">
+                                <div class="output-connection-div">
+                                    <span class="any-icon" style="width: 0.33em; height: 30%; position: absolute; top: 29%; left: 0em; display: inline-block; z-index: 5; border: 1px solid; border-right: 0; opacity: 0.66"></span>
+
+                                    <span class="icon any-icon" style="margin-left: 0.33em; border-left: 1px solid;">a</span>
+                                    <span class="output-connection-name">any</span>
+                                </div>
+                            </td>
+                            <td class="root-cell" style="vertical-align: middle">
+                                <table class="root-call-table">
+                                    <tr><td><div style="margin-left: 1em">Click the root to start editing visually.</div></td></tr>
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <iframe id="page" style="display: none; width: 100%; height: 100%; border: none;"
+                 srcdoc="<h1>hello</h1>">
+                </iframe>
+            </td>
+        </tr>
+        <tr class="console-bar">
+            <td colspan="2">
+                <pre id="console-output" style="width: 100%; height: 15vh; overflow: auto;"><!--
+                    -->This is a simple console output. Open the browser's console for a more advanced console.
+<!--
+                --></pre>
+            </td>
+        </tr>
+        <tr class="status-bar">
+
+        </tr>
+    </table>
+    <!--
+        <button onclick="execute_and_visualise();">Execute</button>
+        <h3>Or supply own console mimicking devtools (attached to bottom)
+            and make it disappear and redirect output to standard console
+            if devtools are open [http://stackoverflow.com/questions/7798748/find-out-whether-chrome-console-is-open]</h3>
+
+                <h3>Just a demo. No real interactivity for now. </h3>
+                <h3>Use PostCSS to style this</h3>
+-->
+</body>
+</html>

@@ -12,18 +12,27 @@ function run_() {
         "false": false,
         "undefined": undefined,
         "is-defined": (a) => { return a !== undefined; },
-        "=": (a, b) => { return a === b; },
+        "not": (a) => { return !a; },
+        "=": (a, b) => { return a === b; }, // Object.is?
+        "<>": (a, b) => { return a !== b; }, // !Object.is?
         "+": (a, b) => { return a + b; },
         "-": (a, b) => { return a - b; },
+        "-#": (a) => { return -a; }, // unary minus
         "*": (a, b) => { return a * b; },
+        "/": (a, b) => { return a / b; },
         "<": (a, b) => { return a < b; },
+        ">": (a, b) => { return a > b; },
         "<=": (a, b) => { return a <= b; },
-        "set-page": (str) => { document.getElementById("page").srcdoc = str; }
+        ">=": (a, b) => { return a >= b; },
+        //"set-page": (str) => { document.getElementById("page").srcdoc = str; },
+        "page": () => { return document.getElementById("page").contentWindow.document.getElementById("canvas-A"); },
+        "window": window
     }));
 }
 
 function parse_() {
     parse(editor.getValue());
+    editor.refresh();
 }
 
 function mark_expression(expression, start_pos, end_pos, extra) {
@@ -36,6 +45,20 @@ function mark_expression(expression, start_pos, end_pos, extra) {
 
     marker.expression = expression;
     expression.marker = marker;
+}
+
+function setBreakpoint(editor) {
+    var mark = getMarkObjAt(doc.getCursor()).mark;
+
+    if (mark.expression.breakpoint) {
+        mark.expression.breakpoint = false;
+        delete mark.expression.breakpoint;
+        mark.className = mark.className.replace("breakpoint", "");
+    } else {
+        mark.expression.breakpoint = true;
+        mark.className += " breakpoint";
+    }
+    editor.refresh();
 }
 
 function initializePrimitiveList() {
@@ -103,7 +126,7 @@ function initializePrimitiveList() {
     editor_raw = CodeMirror.fromTextArea(elm.getElementsByTagName("textarea")[0], {
         lineNumbers: true,
         placeholder: "Type code here.\nCtrl-Space autocompletes.",
-        extraKeys: { "Ctrl-Space": "autocomplete" },
+        extraKeys: { "Ctrl-Space": "autocomplete", "Ctrl-B": setBreakpoint },
         autofocus: true,
         styleActiveLine: true,
         matchBrackets: true,
@@ -181,13 +204,110 @@ function execute_and_visualise() {
     //console.log(JSON.stringify(parsed));
 }
 
+function getMarkObjAt(position, offset = 0) {
+    var token,
+        marks,
+        mark,
+        min,
+        expression,
+        vicinity,
+        index,
+        prevPos,
+        nextPos;
+    // token: Object { start: 18, end: 19, string: "[", type: "bracket", state: Object }
+
+    index = doc.indexFromPos(position);
+    prevPos = doc.posFromIndex(index - 1);
+    nextPos = doc.posFromIndex(index + 1);
+    vicinity = doc.getRange(prevPos, nextPos);
+    console.log('range:', `"${vicinity}"`);
+
+    // todo: cursor @ EOF
+    // todo: meta {} and stuff like [{}] and ]]
+    // vicinity === "[{" ->
+
+    if (vicinity[1] && vicinity[1].search(/\s/) !== -1) { // vicinity.search(/\S\s/)
+        position = prevPos;
+    }
+
+    if (vicinity !== "[{" && vicinity[0].search(/\[|\]|\{|\}/) !== -1) { // or just .search(/\]|\}/)
+        position = nextPos;
+    }
+
+    marks = doc.findMarksAt(position).filter(function (item) {
+        return item.className === 'argument-marker';
+    });
+
+    // picking shortest possible marker at given position
+    // bound with expression with a name that matches current token
+    min = Infinity;
+    var current = 0, ft;
+    for (var i = 0; i < marks.length; ++i) {
+        ft = marks[i].find();
+        current = doc.indexFromPos(ft.to) - doc.indexFromPos(ft.from);
+        if (current < min) {
+            min = current;
+            mark = marks[i];
+        }
+    }
+
+    console.log(mark);
+    //mark.className = "red-back";
+    //mark.css = "z-index: 100; position: absolute; top: 0; left: 0; color: red";
+
+    return { mark, offset };
+}
+
+window.addEventListener('message', function(event) {
+    if (event.origin === "http://127.0.0.1:8080") {
+
+	   console.log("\n\n\n\n\nMESSAGE:", event.data, "/MESSAGE\n\n\n\n\n");
+       localStorage.setItem("testing", event.data);
+       localStorage.setItem("rand", "" + Math.random());
+    }
+});
+
+
+window.addEventListener('storage', function(event) {
+    console.log('editor storage', event);
+});
+
 window.addEventListener("load", function () {
     var consoleInput = document.querySelector("#console-input");
+
+    if (window.self !== window.top) {
+        document.head.innerHTML = `<meta http-equiv="content-type" content="text/html; charset=UTF-8">`;
+        document.body.innerHTML = "<h1>this is here only to capture messages</h1>";
+        return;
+    }
+
+    function toggleMenu() {
+        var menu = bindings["edit-menu"].node.querySelector(".menu");
+        if (menu.style.display === "block") {
+            menu.style.display = "none";
+        } else {
+            menu.style.display = "block";
+        }
+    }
+
+    var bindings = {
+        "edit-menu": {
+            "event-handlers": {
+                "click": toggleMenu,
+                "blur": toggleMenu,
+                "focus": function () { console.log("wtd")}
+            }
+        }
+    };
+    bindNodes(bindings, document);
+
+    console.log(localStorage.getItem("current-project"));
 
     editor = CodeMirror.fromTextArea(consoleInput, {
         lineNumbers: true,
         styleActiveLine: true,
         matchBrackets: true,
+        extraKeys: { "Ctrl-B": setBreakpoint },
         theme: 'zenburn'
     });
     doc = editor.getDoc();
@@ -202,7 +322,22 @@ window.addEventListener("load", function () {
                 if(rawFile.status === 200 || rawFile.status == 0)
                 {
                     var allText = rawFile.responseText;
-                    editor.setValue(allText);
+                    setTimeout(_ => {
+                        // var marks = doc.getAllMarks();
+                        // for (var i = 0; i < marks.length; ++i) {
+                        //     marks[i].clear();
+                        // }
+                        //doc.setValue(allText);
+                        doc.off('cursorActivity', onCursorActivity);
+                        doc.replaceRange(allText, {line:0, ch:0}, {line:10000, ch:0});
+                        setTimeout(_ => {
+                            //doc.replaceRange("", doc.posFromIndex(allText.length), {line:10000, ch:0});
+                            parse_();
+                            doc.on('cursorActivity', onCursorActivity);
+                            editor.refresh();
+                        }, 1000);
+                        // editor.refresh();
+                    }, 1000);
                 }
             }
         }
@@ -218,61 +353,7 @@ window.addEventListener("load", function () {
     var from_index;
     var to_index;
 
-    function getMarkObjAt(position, offset = 0) {
-        var token,
-            marks,
-            mark,
-            min,
-            expression,
-            vicinity,
-            index,
-            prevPos,
-            nextPos;
-        // token: Object { start: 18, end: 19, string: "[", type: "bracket", state: Object }
-
-        index = doc.indexFromPos(position);
-        prevPos = doc.posFromIndex(index - 1);
-        nextPos = doc.posFromIndex(index + 1);
-        vicinity = doc.getRange(prevPos, nextPos);
-        console.log('range:', `"${vicinity}"`);
-
-        // todo: cursor @ EOF
-        // todo: meta {} and stuff like [{}] and ]]
-        // vicinity === "[{" ->
-
-        if (vicinity[1] && vicinity[1].search(/\s/) !== -1) { // vicinity.search(/\S\s/)
-            position = prevPos;
-        }
-
-        if (vicinity !== "[{" && vicinity[0].search(/\[|\]|\{|\}/) !== -1) { // or just .search(/\]|\}/)
-            position = nextPos;
-        }
-
-        marks = doc.findMarksAt(position).filter(function (item) {
-            return item.className === 'argument-marker';
-        });
-
-        // picking shortest possible marker at given position
-        // bound with expression with a name that matches current token
-        min = Infinity;
-        var current = 0, ft;
-        for (var i = 0; i < marks.length; ++i) {
-            ft = marks[i].find();
-            current = doc.indexFromPos(ft.to) - doc.indexFromPos(ft.from);
-            if (current < min) {
-                min = current;
-                mark = marks[i];
-            }
-        }
-
-        console.log(mark);
-        //mark.className = "red-back";
-        //mark.css = "z-index: 100; position: absolute; top: 0; left: 0; color: red";
-
-        return { mark, offset };
-    }
-
-    doc.on('cursorActivity', (doc) => {
+    function onCursorActivity(doc) {
         var mark = getMarkObjAt(doc.getCursor()).mark;
 
         if (currentlySelectedExpression) {
@@ -285,8 +366,9 @@ window.addEventListener("load", function () {
         mark.css = "opacity: 1; background-color: rgba(255, 255, 255, 0.1)";
         editor.refresh();
         currentlySelectedExpression.style.opacity = "0.5";
+    }
 
-    });
+    doc.on('cursorActivity', onCursorActivity);
 
     doc.on('beforeChange', (doc, { text, from, to, removed, origin }) => {
         var { mark, offset } = getMarkObjAt(from),
@@ -350,7 +432,7 @@ window.addEventListener("load", function () {
         arg_start_stack.push(event.character_index);
     });
     listenEvent('parse:argument-end', (event) => {
-        console.log('parse:arg', event, arg_start_stack);
+        //console.log('parse:arg', event, arg_start_stack);
         mark_expression(event.expression, arg_start_stack.pop(), event.character_index);
     });
     // ... listen to parse:...

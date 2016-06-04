@@ -1,0 +1,136 @@
+
+                <div style="width: 42vw; height: 75vh; overflow: auto; position: relative; display: none">
+                    <style>
+                        #text-input span.line:before {
+                            counter-increment: line;
+                            content: counter(line);
+                            display: inline-block;
+                            border-right: 1px solid #ddd;
+                            padding: 0 .5em;
+                            margin-right: .5em;
+                            color: #888
+                        }
+                        .scope {
+                            padding-left: 12px;
+                            display: block;
+                            cursor: text;
+                        }
+                        .scope::before {
+                            content: '[';
+                        }
+                        .scope::after {
+                            content: ']';
+                        }
+                    </style>
+                    <script>
+                        var currentTextNode, dummyCounter = 0;
+                        addEventListener('load', _ => {
+                            var textInput = document.getElementById("text-input");
+
+                            currentTextNode = document.getElementById("root-node");
+                            currentTextNode.focus();
+
+                            textInput.addEventListener('click', _ => {
+                                //currentTextNode.focus();
+                            });
+
+                            textInput.addEventListener('paste', (event) => {
+                                var pastedText = undefined;
+
+                                event.preventDefault();
+
+                                if (window.clipboardData && window.clipboardData.getData) { // IE
+                                    pastedText = window.clipboardData.getData('Text');
+                                } else if (event.clipboardData && event.clipboardData.getData) {
+                                    pastedText = event.clipboardData.getData('text/plain');
+                                }
+                                console.log(parse(pastedText)); // Process and handle text...
+                            });
+
+                            textInput.addEventListener('keypress', (event) => {
+                                console.log(event);
+                                switch (event.keyCode) {
+                                case 9: // tab
+                                    event.preventDefault();
+                                    document.execCommand('insertText', false, '\t');
+                                    // TODO: indent selection
+                                    break;
+                                case 13: // enter
+                                    //event.preventDefault();
+                                    //document.execCommand('insertHTML', false, '<br><span class="line"></span>');
+                                    break;
+                                case 8: //backspace
+                                    var characterToDelete = '?'; // TODO: initialize this
+                                    switch (characterToDelete) {
+                                    case ' ': // TODO: other whitespace
+                                        // merged two names into one or nothing
+                                        break;
+                                    case '[':
+                                        // destroyed a scope
+                                        break;
+                                    case ']':
+                                        // destroyed a scope
+                                        break;
+                                    case '\\':
+                                        // broke special
+                                        break;
+                                    default:
+                                        // edited existing name: removed a character
+                                        break;
+                                    }
+                                    break;
+                                }
+
+                                switch (event.charCode) {
+                                case 32: // (space) -- TODO: other whitespace characters
+                                    // inserted new name, broken a name in two or nothing (depending on context)
+                                    break;
+                                case 91: // [
+                                    // opened new scope
+                                    // add ] and parse current name with [] and insert into AST
+                                    // TODO: id is path
+                                    event.preventDefault();
+                                    //document.execCommand('insertHTML', false, `<span id="" class= tabindex="0" contenteditable="true"></span>`);
+
+                                    var node = document.createElement("span");
+                                    node.id = `newTextNode-${dummyCounter}`;
+                                    node.className = "scope";
+                                    node.tabIndex = "0";
+                                    node.contentEditable = true;
+                                    insertNode(node);
+                                    currentTextNode.contentEditable = false;
+                                    currentTextNode.style.backgroundColor = "#000";
+                                    setTimeout(_ => {
+                                        currentTextNode = document.getElementById(`newTextNode-${dummyCounter}`);
+                                        ++dummyCounter;
+                                        currentTextNode.addEventListener('focus', (event) => {
+                                            //event.stopPropagation();
+                                            console.log("prev:");
+                                            console.log(currentTextNode);
+                                            currentTextNode.contentEditable = false;
+                                            currentTextNode.style.backgroundColor = "#000";
+                                            event.target.contentEditable = true;
+                                            event.target.style.backgroundColor = "#222";
+                                            currentTextNode = event.target;
+                                            console.log(currentTextNode);
+                                        });
+                                        currentTextNode.focus();
+                                    }, 0);
+                                    break;
+                                case 93: // ]
+                                    // closed scope
+                                    break;
+                                case 92: // \
+                                    // introducing special
+                                    break;
+                                default:
+                                    // edited exisiting name: added a character
+                                    break;
+                                }
+                            })
+                        });
+                    </script>
+                    <div id="text-input" style="width: 40vw; height: 100%; counter-reset: line;"><!--
+                        --><pre id="root-node" contenteditable="true"></pre><!--
+                    --></div>
+                </div>

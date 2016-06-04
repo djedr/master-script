@@ -1,3 +1,14 @@
+// util
+// note: this should be moved to utils.js file
+
+// source: http://stackoverflow.com/questions/10425287/convert-dash-separated-string-to-camelcase
+function toCamelCase(input) {
+    return input.toLowerCase().replace(/-(.)/g, function(match, group1) {
+        return group1.toUpperCase();
+    });
+}
+// end util
+
 var paths = [];
 var tree = {};
 
@@ -67,7 +78,7 @@ function separate(expression_string) {
 }
 
 function parseApply(expression, expression_string, character_index, parent) {
-    const openingCharacters = "[{|\\",
+    const openingCharacters = "[{|!",
         closingCharacters = "]}"; // closingSequences = [/^\]/, /^\}/, /^[^\s\[\]\\{\}\|]/]
 
     var arg, separated, separator_cached, character_index_cached, word_end_index, argument_start_index,
@@ -109,6 +120,8 @@ function parseApply(expression, expression_string, character_index, parent) {
 
         separator_cached = separated.separator;
 
+        // note: this shouldn't be performed if the opening character is \ (zero-arg)
+        // because now we have to backtrack unnecessarily
         separated = separate(expression_string.slice(1));
         character_index += expression_string.length - separated.expression_string.length;
         expression_string = separated.expression_string;
@@ -156,7 +169,13 @@ function parseApply(expression, expression_string, character_index, parent) {
             expression_string = arg.rest;
             character_index = arg.character_index;
         } else { // no args
-
+            // TODO: sort out these spaces
+            // for ` [   ]` expr prefix is ` [` and postfix is `   ]`
+            // for `  \   ` it should be: prefix = `  \` and postfix = ``;
+            // in other words it shouldn't skipSpace after the \
+            //expression.postfix += separator_cached;
+            character_index -= separator_cached.length;
+            expression_string = separator_cached + expression_string;
         }
     }
 
@@ -201,7 +220,7 @@ function parseExpression(prefix, expression_string, character_index, parent) {
     // -- aaa
     //
     //    -- bbb
-    if (match = /^[^\s\[\]\\{\}\|]+/.exec(expression_string)) {
+    if (match = /^[^\s\[\]!{\}\|]+/.exec(expression_string)) {
         expression = {
             type: "word",
             name: match[0],
@@ -451,13 +470,13 @@ function unparseString(expression, env, branchId) {
         case "meta":
             return "";
         case "apply":
-            if (expression.operator.type === "meta") {
-                op = expression.prefix;
-                // expression.args.map(function (arg, i) {
-                //     op += evaluate(arg, env, i);
-                // });
-                return op + expression.postfix;
-            }
+            // if (expression.operator.type === "meta") {
+            //     op = expression.prefix;
+            //     // expression.args.map(function (arg, i) {
+            //     //     op += evaluate(arg, env, i);
+            //     // });
+            //     return op + expression.postfix;
+            // }
             op = unparseString(expression.operator, env, branchId) + expression.prefix;
 
             expression.args.map(function (arg, i) {
@@ -471,9 +490,13 @@ function unparseString(expression, env, branchId) {
 
 // {expression, environment, parent, brachId, whitelist}
 function evaluate(expression, environment, branchId) { // , root/currentRoot, branchId
-    var op;
+    var op, context = null;
 
     //console.log(unparse(expression));
+
+    if (expression.breakpoint) {
+        debugger;
+    }
 
     switch (expression.type) {
     case "word":
@@ -499,9 +522,10 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
         // special forms handle substitution and evaluation on their own (lazily)
         // definitely fun, mac should
         // note: this will make {a}[b c d] -> if[b c d] not work
-        if (expression.operator.name && expression.operator.name === "'") {
+        if (expression.operator.name && /^'|html'$/.test(expression.operator.name)) {
             //expression = substitute(expression, environment, branchId);
-            return unparseString(expression, environment, branchId).slice(2, -1);
+            var str = unparseString(expression, environment, branchId);
+            return str.slice(str.search(/\[|\|/) + 1, str[str.length - 1] === ']'? -1: undefined);
         }
 
         if (expression.operator.type === "word" && expression.operator.name in specialForms) {
@@ -509,9 +533,9 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
         }
 
         op = evaluate(expression.operator, environment, branchId);
-        if (typeof op !== 'function') {
+        //if (typeof op !== 'function') {
             if (op && typeof op === 'object') { // non-null object
-                if (op.type) { // TODO: implement this differently {tag} {type} {meta}
+                if (op.type && op.type[0] === '[') { // TODO: implement this differently {tag} {type} {meta}
                     switch (op.type) {
                     case "[macro]":
                         var expr = op.value.apply(null, expression.args);
@@ -525,6 +549,13 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
                             return evaluate(expr, environment, branchId);
                         }
                         return expr; // ?
+                    case "[invocation]":
+                        context = op.context;
+                        op = op.method;
+                        // not decidedly an invocation of op is the user's intention here
+                        // he may want to access op's properties
+                        // because in js a function is also an object`
+                        break;
                     case "word": // ???
                         // handle {op[sth]}
                         expression.operator = op; // replace op
@@ -534,41 +565,52 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
                         });
                         return expression;
                     }
-                } else if (Array.isArray(op)) { // apply array -- get index
-                    // TODO: implement number; this should work with literal numbers or values
-                    var index = specialForms["number"](expression.args, environment),// evaluate(expression.args[0], environment, 0), // TODO: should return -0 or +0
-                        length = op.length;
-                        // TODO: expression.args[0] should be wrapped in num
-
-                    if (Object.is(index, -0)) { // -0 means the last index
-                        return op[length - 1];
-                    } else if (index < 0) { // negative indices mean offset from the end
-                        return op[length - index - 1];
-                    } else { // assuming index is integer > 0
-                        return op[index];
-                    }
                 } else { // makes op|x turn to op.x and op|x[y z x] turn to op.x(y, z, x)
-                    op = op[expression.args[0].name]; // or evaluate expression.args[0]
+                    var property = evaluate(expression.args[0], environment, 0);
+                    if (Array.isArray(op) && Number.isInteger(property)) { // apply array -- get index
+                        var length = op.length, index = property;
 
-                    if (typeof op !== 'function') {
-                        return op;
+                        if (index < 0) { // negative indices mean offset from the end
+                            // could do modulo instead error, but that might cause hard to find bugs
+                            if (-index > length) {
+                                return { type: "[error]", message: `negative indices are allowed and count from the end, but index ${index} is still out of bounds;` };
+                            }
+                            return op[length - index];
+                        } else { // assuming index is integer > 0
+                            if (index >= length) {
+                                return { type: "[error]", message: `index ${index} is out of bounds` }
+                            }
+                            return op[index];
+                        }
                     }
-                }
-            }
 
-            //
-            // if macro, don't evaluate args; eval the macro, splice the returned ast in place and eval that
-            // gotta keep track of macro's op -- root?
-            // currentRoot.args[branchId] = returnedAst
-            // else:
-            console.log('type error 1:');
-            console.log('applying a non-function:');
-            console.log(op);
-            return;
-        }
+                    if (property in op || (property = toCamelCase(property)) in op) {
+                        var ret = op[property]; // or evaluate expression.args[0]
+
+                        // preserve context
+                        if (typeof ret === "function") {
+                            return { type: "[invocation]", context: op, method: ret };
+                        }
+
+                        return ret;
+                    }
+                    return { type: "[error]", message: `property ${property} not present in object` };
+                }
+            } else if (typeof op !== "function") {
+                //
+                // if macro, don't evaluate args; eval the macro, splice the returned ast in place and eval that
+                // gotta keep track of macro's op -- root?
+                // currentRoot.args[branchId] = returnedAst
+                // else:
+                console.log('type error 1:');
+                console.log('applying a non-function:');
+                console.log(op);
+                return { type: "[error]", message: "applying a non-function (0)", data: [op] };
+            }
+        //}
 
         // not sure when this should happen
-        expression = substitute(expression, environment, branchId); // this copies
+        expression = substitute(expression, environment, branchId, ""); // this copies
 
         // scan args for meta first and evaluate that
         // for (i = 0; i < expression.args; ++i) {
@@ -580,7 +622,7 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
         // f[{{a} b c {d e}} f g {h {i j} k} l m n]
 
         // after there's no more meta arguments, evaluate as usual
-        return op.apply(null, expression.args.map(function (arg, i) { // , i
+        return op.apply(context, expression.args.map(function (arg, i) { // , i
             var ret = evaluate(arg, environment, i), expr;
             // identifying macros by return value:
             // if (Array.isArray(ret) && ret[1] is code) { // ret[1].type === "{code}"
@@ -1078,6 +1120,11 @@ function find_path_in_text(text, path) {
 var specialForms = Object.create(null);
 var specialFormsArgumentNames = Object.create(null);
 
+specialForms["debug*"] = function (args, env) {
+    debugger;
+    return null;
+}
+
 specialFormsArgumentNames["if"] = ["condition", "if-condition-true", "if-condition-false"];
 specialFormsArgumentNames["conditional"] = specialFormsArgumentNames["if"];
 
@@ -1192,8 +1239,9 @@ specialFormsArgumentNames["define*"] = ["name", "value"];
 specialForms["define*"] = function(args, env) {
   if (args.length != 2 || args[0].type != "word") {
     console.log("define.args != 2 or args[0].type != word");
-    return null;
+    return { type: "[error]", message: "define.args != 2 or args[0].type != word" };
   }
+  // todo: make it use bindNames
 
   var value = evaluate(args[1], env, 1);
 
@@ -1208,23 +1256,134 @@ specialForms["define*"] = function(args, env) {
   return value;
 };
 
+specialForms["push*"] = function(args, env) {
+    if (args[1]) {
+        var list = evaluate(args[1], env, 1);
+
+        if (Array.isArray(list)) {
+            // note: what if args[0] is undefined?
+            list.push(evaluate(args[0], env, 0));
+            return list;
+        }
+        return { type: "[error]", message: "can only push elements onto a valid list" };
+    }
+    return { type: "[error]", message: "need a list as the first argument" };
+}
+
+// todo: make mutate* work with objects
+// make sure this (or bindNames) doesn't allow redefinition
+// it should probably only complain if we're trying to redefine variable from the same scope
+// i.e. if (Object.prototype.hasOwnProperty.call(env, name)) { complain }
+// bindNames should take care of this
+specialForms["bind*"] = function(args, env) {
+    if (args[2]) {
+        var scope = evaluate(args[2], env, 2);
+
+        if (scope && typeof scope === "object") {
+            env = scope;
+        } else {
+            return { type: "[error]", message: "can only bind inside a valid scope" };
+        }
+    }
+
+    if (bindNames(evaluate(args[0], env, 0), evaluate(args[1], env, 1), env)) {
+        return env;
+    }
+
+    return { type: "[error]", message: "can't bind values to names" };
+};
+
+specialForms["get*"] = function(args, env) {
+    if (args[1]) {
+        var scope = evaluate(args[1], env, 1);
+        // scope not necessarily an object, could be a function
+        if (scope.type === "[invocation]") {
+            scope = scope.method;
+        }
+        var prop = evaluate(args[0], env, 0);
+        return scope[prop];
+    }
+
+    return { type: "[error]", message: "need an object to get a property from" };
+};
+
+// a list should only support push and reading the indices, so no such thing as bind-index* should exist
+specialForms["mutate-at-index*"] = function(args, env) {
+    if (args[2]) {
+        var list = evaluate(args[2], env, 2);
+
+        if (Array.isArray(list)) {
+            var index = evaluate(args[0], env, 0);
+            if (Number.isInteger(index) && index >= 0 && list[index]) { // && index < list.length or && index <= list.length (= list.length would mean push)?
+                list[index] = evaluate(args[1], env, 0);
+                return list;
+            } else {
+                return { type: "error", message: "the index must be an integer >= 0 and an element under that index must be defined in the list" }
+            }
+        }
+        return { type: "[error]", message: "can only mutate lists" };
+    }
+    return { type: "[error]", message: "mutate-at-index* needs a third argument of list type" }
+};
+
+specialForms["scope*"] = function(args, env) {
+    return Object.create({});
+}
+
+specialForms["mutate-in*"] = function(args, env) {
+    if (args.length != 3 || args[0].type != "word") {
+        console.log("mutate-in.args != 3 or args[0].type != word");
+        return error("mutate.args != 3 or args[0].type != word");
+    }
+
+    var value = evaluate(args[1], env, 1);
+    env = evaluate(args[2], env, 2);
+
+    // if value.type && value.type === "[macro]"
+    //    macros[args[0].name] = value.value
+    // else:
+    if (env[args[0].name] === undefined) {
+        throw new TypeError(`Can't mutate '${args[0].name}'! It is not defined!`);
+    } else {
+        while (Object.prototype.hasOwnProperty.call(env, args[0].name) === false) {
+            env = Object.getPrototypeOf(env);
+        }
+        env[args[0].name] = value;
+    }
+    return env;
+};
+
+specialForms["alter*"] = function(args, env) {
+    // todo: this should work like bind*, but only allow overwriting existing values (like mutate*)
+    // probably will have to make a version of bindNames for that or alter the existing version adding a flag for mutation
+};
+
 specialForms["mutate*"] = function(args, env) {
-  if (args.length != 2 || args[0].type != "word") {
-    console.log("define.args != 2 or args[0].type != word");
-    return null;
-  }
+    if (args.length != 2 || args[0].type != "word") {
+        console.log("define.args != 2 or args[0].type != word");
+        return null;
+    }
 
-  var value = evaluate(args[1], env, 1);
+    var value = evaluate(args[1], env, 1), scope = env;
 
-  // if value.type && value.type === "[macro]"
-  //    macros[args[0].name] = value.value
-  // else:
-  if (env[args[0].name] === undefined) {
-      throw new TypeError(`Can't mutate '${args[0].name}'! It is not defined!`);
-  } else {
-      env[args[0].name] = value;
-  }
-  return value;
+    // if value.type && value.type === "[macro]"
+    //    macros[args[0].name] = value.value
+    // else:
+    while (Object.prototype.hasOwnProperty.call(scope, args[0].name) === false) {
+        scope = Object.getPrototypeOf(scope);
+        if (!scope) {
+            return error(`Can't mutate '${args[0].name}'! It is not defined!`);
+        }
+    }
+    scope[args[0].name] = value;
+
+    return env; // could also return env or scope; question is: which?
+};
+
+specialForms["list"] = function (args, env) {
+    return args.map((arg, i) => {
+        return evaluate(arg, env, i);
+    });
 };
 
 specialForms["print$"] = function(args, env) {
@@ -1254,6 +1413,14 @@ specialForms["color-hex"] = function (args, env) {
     return hex_value;
 };
 
+specialForms["log"] = function (args, env) {
+    var value = evaluate(args[0], env, 0);
+
+    console.log(value);
+
+    return value;
+};
+
 specialForms["log'"] = function (args, env) {
     var value = specialForms["$"](args, env);
     document.getElementById('console-output').innerHTML = value + '\n' + document.getElementById('console-output').innerHTML;
@@ -1262,6 +1429,33 @@ specialForms["log'"] = function (args, env) {
 
     return value;
 };
+
+specialForms["set-timeout"] = function (args, env) {
+    var time = evaluate(args[1], env, 1);
+    setTimeout(_ => {
+        evaluate(args[0], env, 0);
+    }, time);
+}
+
+specialForms["add-listener"] = function (args, env) {
+    var time = evaluate(args[1], env, 1);
+    evaluate(args[0], env, 0).addEventListener(evaluate(args[1], env, 1), _ => {
+        evaluate(args[2], env, 0);
+    });
+}
+
+specialForms["async*"] = function (args, env) {
+    var method = evaluate(args[0], env, 0), context = null;
+
+    if (method.type === "[invocation]") {
+        method = method.method;
+        context = method.context;
+    }
+
+    return method.apply(context, args.slice(1).map((arg, i) => {
+        return evaluate(arg, env, i + 1);
+    }));
+}
 
 specialForms["block"] = function (args, env) {
     return args[0];
@@ -1289,6 +1483,9 @@ function restParameters(expr, env, parameters, j) {
     }
 }
 
+// TODO: this should do evaluation
+// if arg = _, shouldn't evaluate
+// also this should probably take another argument and check if binding is destructive or constructive
 function bindNames(args, values, env) {
     var i, j, expr, value, rest;
     for (i = 0, j = 0; i < args.length && j < values.length; ++i, ++j) {
@@ -1297,6 +1494,7 @@ function bindNames(args, values, env) {
         case "word": // bind
             if (expr.name !== "_") { // _ means placeholder -- binds to nothing
                 env[expr.name] = values[j];
+                // error if redefining?
             }
             break;
         case "apply":
@@ -1306,7 +1504,9 @@ function bindNames(args, values, env) {
                 switch (expr.operator.name) {
                 case "list":
                     if (Array.isArray(value)) {
-                        bindNames(expr.args, value, env);
+                        if (bindNames(expr.args, value, env) === false) {
+                            return false;
+                        }
                     } else {
                         return false;
                         //throw new TypeError(`Can't deconstruct value '${value}' with '${expr.operator.name}' operator!`);
@@ -1314,7 +1514,10 @@ function bindNames(args, values, env) {
                     break;
                 case "code":
                     // todo
+                    throw new TypeError("code pattern matching is not implemented yet!");
                     break;
+                // case "index":
+                //     evaluate(expr.args[0], env, 0)[expr.args[1].name] = values[j];
                 default:
                     // todo: allow bindName for the argument as in >[#\3 x] / >[x #\3]
                     if (["=", "<", "<=", ">=", "<>"].indexOf(expr.operator.name) !== -1) {
@@ -1337,6 +1540,9 @@ function bindNames(args, values, env) {
             break;
         }
     }
+    if (j === 0 && args[0].operator.type === "meta") {
+        env[args[0].args[0].name] = [];
+    }
     if (j < values.length) {
         //throw new TypeError("Too many arguments while calling the function!");
         //return fail("Too many arguments while calling the function!");
@@ -1354,30 +1560,186 @@ specialForms["args-list"] = function (args, env) {
     return args;
 }
 
+function error(message, data = []) {
+    return { type: "[error]", message: message, data: data };
+}
+
+function getProperty(context, property) {
+    if (property in context || (property = toCamelCase(property)) in context) {
+        var ret = context[property];
+
+        return ret;
+    }
+    return error(`property ${property} not found in context [0]`, [context]);
+}
+
+// this can definitely be way more efficient
+specialForms["."] = function (args, env) {
+    // 0th arg -- object/array
+    // 1st..nth arg -- prop names, not evaluated if words
+
+    // first context is env
+    if (args.length < 1) {
+        return { type: "[error]", message: "access operator . needs at least 1 argument: the accessed property name within current context (as identifier or string)" };
+    }
+
+    var context = env, property;
+
+    if (args.length === 1)
+        return getPropertyAt(0);
+
+    context = evaluate(args[0], env, 0);
+
+    if (!context) { // note: should verify context here to make sure that it has accessable properties
+        return error("given context has no accessable properties");
+    }
+
+    // get array at index
+    if (Array.isArray(context) && Number.isInteger(args[1].value)) {
+        var length = context.length, index = args[1].value;
+
+        if (index < 0) { // negative indices mean offset from the end
+            // could do modulo instead error, but that might cause hard to find bugs
+            if (-index > length) {
+                return { type: "[error]", message: `negative indices are allowed and count from the end, but index ${index} is still out of bounds;` };
+            }
+            return context[length - index];
+        } else { // assuming index is integer > 0
+            if (index >= length) {
+                return { type: "[error]", message: `index ${index} is out of bounds` }
+            }
+            return context[index];
+        }
+    }
+
+    function getPropertyAt(i) {
+        if (args[i].type === "word") {
+            return getProperty(context, args[i].name);
+        } else {
+            // so if you want a value of some variable to be a property name you need to use identity function on that variable
+            return getProperty(context, evaluate(args[i], env, i));
+        }
+    }
+
+    property = getPropertyAt(1);
+
+    for (var i = 2; i < args.length; ++i) {
+        if (property.type === "[error]") {
+            return property;
+        }
+        context = property;
+        property = getPropertyAt(i);
+    }
+
+    // function aux() {
+    //     return property.apply(context, arguments);
+    // }
+
+    // if the final value is function, make sure it will be applied in a proper context when invoked
+    // note: the context will not be (easily) separable later this way
+    if (typeof property === "function") {
+        return { type: "[invocation]", context: context, method: property };
+        //return aux; // no need for returning invocation
+    }
+
+    return property;
+    //return { type: "[invocation]", context: };
+    // return { type: "[access]", context: context, property: property };
+}
+
+specialForms["inside*"] = function (args, env) {
+    return evaluate(args[1], evaluate(args[0], env, 0), 1);
+}
+
+// this can definitely be way more efficient
+// this mutates or binds if not defined
+specialForms[":"] = function (args, env) {
+    // 0th arg -- object/array
+    // 1st..nth arg -- prop names, not evaluated if words
+    if (args.length < 2) {
+        return { type: "[error]", message: "update operator : needs at least 2 arguments: the property name to set within current context (as identifier or string) and the value to set" };
+    }
+
+    var context = env, property, propertyName,
+        value = evaluate(args[args.length - 1], env, args.length - 1);
+
+    if (args.length === 2)
+        return setPropertyAt(0); //specialForms["mutate*"](args, env);
+
+    // args > 2
+    context = specialForms["."](args.slice(-2), env);
+
+    if (!context) { // note: should verify context here to make sure that it has accessable properties
+        return error("given context has no accessable properties");
+    }
+
+    // get array at index
+    if (Array.isArray(context) && Number.isInteger(args[1].value)) {
+        var length = context.length, index = args[1].value;
+
+        if (index < 0) { // negative indices mean offset from the end
+            // could do modulo instead error, but that might cause hard to find bugs
+            if (-index > length) {
+                return { type: "[error]", message: `negative indices are allowed and count from the end, but index ${index} is still out of bounds;` };
+            }
+            return context[length - index] = value;
+            //return context[length - index];
+        } else { // assuming index is integer > 0
+            if (index >= length) {
+                return { type: "[error]", message: `index ${index} is out of bounds` }
+            }
+            return context[index] = value;
+            //return context[index];
+        }
+    }
+
+    function setPropertyAt(i) {
+        if (args[i].type === "word") {
+            return context[args[i].name] = value;
+        } else {
+            // so if you want a value of some variable to be a property name you need to use identity function on that variable
+            return context[evaluate(args[i], env, i)] = value;
+        }
+    }
+
+    return setPropertyAt(args.length - 2);
+}
+
 specialForms["functions*"] = function(args, env) {
     if (!args.length)
         throw new SyntaxError("Functions need a body");
 
-    var argsList = evaluate(args[0], env, 0);
+    var argsList = args[0].args.length > 0? evaluate(args[0], env, 0): undefined;
     var body = args[1];
-    var altFun = args[2];
+    var alternative = undefined;
 
     return function() {
-        var localEnv = Object.create(env);
+        var localEnv = Object.create(env), ret;
+
+        if (!argsList) { // empty param list matches anything
+            return evaluate(body, localEnv, 1);
+        }
 
         if (bindNames(argsList, arguments, localEnv)) { // perhaps bindNames should return new environment
             return evaluate(body, localEnv, 1);
-        } else if (altFun) {
-            var f = evaluate(altFun, env, 2);//.apply(null, arguments);
-            if (typeof f !== 'function') {
-                throw new TypeError("A non-function supplied as an alternative!");
+        } else if (args[2]) {
+            alternative = evaluate(args[2], env, 2);
+            if (typeof alternative === 'function') {
+                ret = alternative.apply(null, arguments);
+                return ret;
+            } else if (alternative.type === "[invocation]") { // if alt = undefined this will fail
+                ret = alternative.method.apply(alternative.context, arguments);
+                return ret;
+            } else { // alternative is a value?
+                return alternative;
             }
-            return f.apply(null, arguments);
-        } else {
-            return undefined;
+            // fallthrough
         }
 
-        return evaluate(body, localEnv, 1);
+        return { type: "[error]", message: "unable to bind values to function arguments and no viable alternative provided" }; // maybe should throw here if alternative undefined?
+        // or return errorInfo
+
+        //return evaluate(body, localEnv, 1);
     };
 };
 
@@ -1483,7 +1845,7 @@ specialForms["macro*"] = function(args, env) {
             // NOTE: this is mistaken:
             var expr = evaluate(body, localEnv, 0);//args.length - 1); // TODO: make that work with parentExpression
             if (expr.type !== '[macro]') {
-                expr = substitute(expr, localEnv, 0); // note: should probably copy whole tree
+                expr = substitute(expr, localEnv, 0, ""); // note: should probably copy whole tree
             }
             return expr;
             // evaluate could do that: if return value is ast, splice it in place
@@ -1493,7 +1855,9 @@ specialForms["macro*"] = function(args, env) {
     };
 };
 
-function substitute(expression, environment, branchId) {
+// TODO: space is not preserved on substitution
+// have to add a prefix before the first arg -- how?
+function substitute(expression, environment, branchId, mode) {
     // TODO: splice args from env into expression
     // match expression names with regex /{...}/
     // when such found, replace it with respective argument from the env
@@ -1502,7 +1866,7 @@ function substitute(expression, environment, branchId) {
     // could work with !|name or { name }
     // if op.name === "!"
     // _|name
-    var args, i, arg;
+    var args, finalArgs, i, arg, prefix;
 
     switch (expression.type) {
         case 'word':
@@ -1510,11 +1874,45 @@ function substitute(expression, environment, branchId) {
         case 'apply':
             expression = Object.assign({}, expression);
 
+            if (expression.operator.name === "html'") {
+                mode = "html";
+            }
+
             if (expression.operator.type === "meta") {
                 //var expr = evaluate(expression.args[0], environment, 0);
-                args = expression.args.map((arg, i) => {
+                prefix = expression.prefix.slice(0, -1);
+                args = [];
+                if (mode === "html") {
+                    if (expression.args.length === 1 && expression.args[0].operator && expression.args[0].operator.type === "meta") {
+                        expression = expression.args[0];
+                    } else {
+                        args = expression.args.map((arg, i) => {
+                            return substitute(arg, environment, i, mode);
+                        });
+                        expression.args = args;
+
+                        // NOTE: this is an ugly solution (copy-paste from below)
+                        finalArgs = [];
+                        for (i = 0; i < args.length; ++i) {
+                            arg = args[i];
+
+                            if (Array.isArray(arg)) {
+                                finalArgs = finalArgs.concat(arg);
+                            } else {
+                                finalArgs.push(arg);
+                            }
+                        }
+
+                        expression.args = finalArgs;
+
+                        return expression;
+                    }
+                    args.push(prefix);
+                }
+
+                args = args.concat(expression.args.map((arg, i) => {
                     return evaluate(arg, environment, i);
-                });
+                }));
 
                 return args;
             }
@@ -1522,7 +1920,9 @@ function substitute(expression, environment, branchId) {
             //     var args = substitute(arg, environment, i);
             // });
 
-            expression.operator = substitute(expression.operator, environment, branchId);
+            //expression.operator = Object.assign({}, expression.operator);
+
+            expression.operator = substitute(expression.operator, environment, branchId, mode);
             if (Array.isArray(expression.operator)) { // {a b c op}[args] -> ([x y z f])[args] -> f[args]
                 // perhaps {a b c op}[args] should turn into x y z f[args] instead of f[args]
                 // otoh it's weird; for now it'll be an error
@@ -1535,7 +1935,7 @@ function substitute(expression, environment, branchId) {
             args = [];
 
             for (i = 0; i < expression.args.length; ++i) {
-                arg = substitute(expression.args[i], environment, i);
+                arg = substitute(expression.args[i], environment, i, mode);
 
                 if (Array.isArray(arg)) {
                     args = args.concat(arg);
@@ -1544,7 +1944,7 @@ function substitute(expression, environment, branchId) {
                 }
             }
 
-            var finalArgs = [];
+            finalArgs = [];
             for (i = 0; i < args.length; ++i) {
                 arg = args[i];
 
