@@ -1,0 +1,101 @@
+<style>
+	* {
+		outline: 1px dotted black;
+	}
+	.call {
+		display: table;
+	}
+	.operator, .argument {
+		display: table-row;
+	}
+</style>
+
+<pre>
+s sequence doc1
+	0 # any a a any
+		d define doc2
+			name n symbol s s symbol
+				f five doc3
+			value v any a # number
+				# 5 doc4
+	1 # any a # number
+		f five doc5
+	2 # any a # number
+		# 42 doc6
+</pre>
+
+<pre>
+a any s sequence doc1
+			 0 # any a a any d define doc2
+		arg0 doc 			   name n symbol s s symbol f five doc3	
+							  value v any a # number # 5 doc4						
+			 1 # any a # number f five doc5
+		arg1 doc		
+			 2 # any a # number # 42 doc6
+		arg2 doc		
+</pre>
+
+<pre>
+ >>>>>>>>>>>>>>>>>>>+
+<A|any||S|sequence| v Evaluates arguments in order. Returns the value of the last.
+ <<<<<<<<<<<<<<<<<+ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ||	    0 ^#|any|A<<A|any   ||D|define| v Defines a new variable.
+ 	  ||    First ^ +<<<<<<<<<<<<<<<<<<<<<<<<<+ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ||  step in ^ v               ||   name ^N|symbol|S<<S|symbol||F|five v This contains the number 5.
+ 	  || 	  the ^ v	            ||        ^ +<<<<<<<<<<<<<<<<<<<<<<<<<><+
+ 	  || sequence ^ v               ||        ^ v
+ 	  || 		  ^ v               ||        ^ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  || 		  ^ v	 		    ||  value ^V|any   |A<<#|number||#|5    v
+ 	  || 		  ^ v			    ||        +<<<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ||          ^ v               ||         ||
+ 	  ||          ^ v               |+=========+|
+ 	  || 		  ^ v               
+ 	  || 		  ^ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  || 	    1 ^#|any|A<<#|number||F|five    v Evaluate the variable 'five'.
+      ||   Second ^ +<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ||     step ^ v
+ 	  ||          ^ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+		
+ 	  || 	    2 ^#|any|A<<#|number||#|42      v Return the meaning of it all.
+ 	  ||   Third. +<<<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ||           ||
+ 	  ||    [+]    ||
+ 	  |+===========+|
+</pre>
+
+<div class="call">
+	<div class="operator">
+		s sequence
+	</div>
+	<div class="argument">
+		0 # any a a any
+		<div class="call">
+			<div class="operator">
+				d define
+			</div>
+			<div class="argument">
+				name n symbol s s symbol
+				<div class="call">
+					<div class="operator">f five</div>
+				</div>
+			</div>
+			<div class="argument">
+				value v any a # number
+				<div class="call">
+					<div class="operator"># 5</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="argument">
+		1 # any a # number
+		<div class="call">
+			f five
+		</div>
+	</div>
+	<div class="argument">
+		2 # any a # number
+		<div class="call">
+			# 42
+		</div>
+	</div>
+</div>

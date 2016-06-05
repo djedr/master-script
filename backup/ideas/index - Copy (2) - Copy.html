@@ -1,0 +1,354 @@
+<!-- todo: cleanup, values as variables -->
+<style>
+	body {
+		font-family: monospace;
+		background-color: #222;
+	}
+	
+	/* tabular structure */
+	.call {
+		display: table;
+		width: 100%;
+	}
+	.argument, .operator {
+		display: table-row;
+	}
+	.argument-pin, .connection, .output-connection, .input-connection {
+		display: table-cell;
+	}
+	
+	/* global: borders */
+	.argument-pin, .operator-pin, .last, .connection-name {
+		border: 5px solid transparent;
+		border-image: url(border.png) 15 repeat;
+	}
+	
+	/* table rows */
+	.argument-pin, .operator-pin {
+		background-color: #555;
+		border-width: 5px 5px 0 5px;
+	}
+	.argument-pin {
+		border-width: 0 5px 0 5px;
+		
+		color: #ffa;
+		
+		text-align: right;
+	}
+	.operator-pin {
+		border-width: 5px 5px 0 0;
+		
+		color: #ddd;
+	}
+	
+	/* table cells */
+	.argument-pin-number, .operator-pin-name, .argument-pin-button { /* just pin? */
+		background-color: #ccc;
+		color: #333;
+	}
+	.argument-pin-number, .argument-pin-button {
+		margin-left: 1em;
+	}
+	.argument-pin-number {
+		margin-right: -5px;
+	}
+	.argument-pin-button {
+		margin-right: 1em;
+	}
+	.last {
+		border-width: 0 5px 5px 5px;
+		
+		text-align: center;
+	}
+	.connection-name {
+		border-width: 5px 0 5px 0;
+		
+		color: #ddd;
+		
+		margin-top: 1em;
+		
+		white-space: nowrap; /* so the icons are in the same line as type names */
+	}
+	
+	/* sub-table-cells */
+	.description-wrapper {
+		display: table;
+		
+		width: 100%;
+	}
+	.description {
+		display: table-caption;
+		
+		opacity: 0.5;
+		
+		color: #fff;
+		
+		font-size: 0.75em;
+	}
+	.operator-description-wrapper {
+		display: table-cell;
+		
+		position: relative;
+		
+		width: 0;
+		
+		overflow: show;
+		
+		vertical-align: top;
+	}
+	.operator .description {
+		position: absolute;
+	}
+	
+	/* icons -- general */
+	.icon {
+		padding: 0 0.25em 0 0.25em;
+	}
+	.argument-pin-number .icon {
+		float: right;
+		
+		margin-left: 0.25em;
+	}
+	.operator-pin-name .icon {
+		float: left;
+		
+		margin-right: 0.25em;
+	}
+	.output-connection .icon, .input-connection .icon {
+		display: inline;
+	}
+	.input-connection {
+		text-align: right;
+	}
+	.output-connection {
+		text-align: left;
+	}
+	
+	/* icons -- specific */
+	.define-icon {
+		background-color: #023;
+		color: #8af;
+	}
+	.any-icon {
+		background-color: #004;
+		color: #9af;
+	}
+	.name-icon {
+		background-color: #413;
+		color: #bcd;
+	}
+	.value-icon {
+		background-color: #021;
+		color: #89c;
+	}
+	.five-icon {
+		background-color: #432;
+		color: #fac;
+	}
+	.number-icon {
+		background-color: #041;
+		color: #8f8;
+	}
+	.sequence-icon {
+		background-color: #441;
+		color: #fc8;
+	}
+	.symbol-icon {
+		background-color: #440;
+		color: #f88;
+	}
+</style>
+<div style="display: table">
+	<div class="input-connection">
+		<div class="connection-name">
+			<span>any</span>
+			<div class="icon any-icon">a</div>
+		</div>
+	</div>
+	<div class="output-connection">
+		<div class="connection-name">
+			<div class="icon any-icon">a</div>
+			<span>any</span>
+		</div>
+	</div>
+	<div class="call">
+		<div class="operator">
+			<div class="operator-pin" >
+				<div class="operator-pin-name"><div class="icon sequence-icon">s</div> sequence</div>
+			</div>
+			<div class="operator-description-wrapper">
+				<div class="description" style="width: 10000%; margin-left: 1em">
+					Evaluates its arguments in order. Returns the value of the last.
+				</div>
+			</div>
+		</div>
+		<div class="argument">
+			<div class="argument-pin">
+				<!--<div style="display: table-row">-->
+					<div class="argument-pin-number" xstyle="display: table-cell;  border: 1px solid black;">
+						0
+						<div class="icon number-icon" xstyle="display: table-cell">#</div>
+					</div>
+				<!--</div>-->
+				
+				<div class="description-wrapper" xstyle="display: table-row; font-size: 0.75em; color: rgba(255, 255, 255, 0.5)">
+					<div class="description" xstyle="display: table-cell;">
+						First argument in the sequence.
+						..........
+						.............
+						..................
+						...
+						.............
+						...
+						.......
+					</div>
+				</div>
+			</div>
+			<div class="input-connection">
+				<div class="connection-name">
+					<span>any</span>
+					<div class="icon any-icon">a</div>
+				</div>
+			</div>
+			<div class="output-connection">
+				<div class="connection-name">
+					<div class="icon any-icon">a</div>
+					any
+				</div>
+			</div>
+			<div class="call">
+				<div class="operator">
+					<div class="operator-pin">
+						<div class="operator-pin-name">define <div class="icon define-icon">d</div></div>
+					</div>
+				</div>
+				<div class="argument">
+					<div class="argument-pin">
+						<div class="argument-pin-number"><div class="icon name-icon">n</div> name</div>
+					</div>
+					<div class="input-connection">
+						<div class="connection-name">
+							<span>symbol</span>
+							<div class="icon symbol-icon">s</div>
+						</div>
+					</div>
+					<div class="output-connection">
+						<div class="connection-name"><div class="icon symbol-icon">s</div> symbol</div>
+					</div>
+					<div class="call">
+						<div class="operator-pin">
+							<div class="operator-pin-name">
+								five <div class="icon five-icon">f</div>
+							</div>
+						</div>
+						<div class="argument">
+							<div class="argument-pin last"></div>
+						</div>
+					</div>
+				</div>
+				<div class="argument">
+					<div class="argument-pin">
+						<div class="argument-pin-number"><div class="icon value-icon">v</div> value</div>
+					</div>
+					<div class="input-connection">
+						<div class="connection-name">
+							<span>any</span>
+							<div class="icon any-icon">a</div>
+						</div>
+					</div>
+					<div class="output-connection">
+						<div class="connection-name"><div class="icon number-icon">n</div> number</div>
+					</div>
+					<div class="call">
+						<div class="operator-pin">
+							<div class="operator-pin-name">
+								5 <div class="icon number-icon">#</div>
+							</div>
+						</div>
+						<div class="argument">
+							<div class="argument-pin last"></div>
+						</div>
+					</div>
+				</div>
+				<div class="argument">
+					<div class="argument-pin last"></div>
+				</div>
+			</div>
+		</div>
+		<div class="argument">
+			<div class="argument-pin">
+				<div class="argument-pin-number"><div class="icon number-icon">#</div> 1</div>
+				
+				<div class="description-wrapper">
+					<div class="description">
+						Second argument in the sequence.
+						....
+						....
+						....
+						....
+					</div>
+				</div>
+			</div>
+			<div class="input-connection">
+				<div class="connection-name">
+					<span>any</span>
+					<div class="icon any-icon">a</div>
+				</div>
+			</div>
+			<div class="output-connection">
+				<div class="connection-name"><div class="icon number-icon">n</div> number</div>
+			</div>
+			<div class="call">
+				<div class="operator-pin">
+					<div class="operator-pin-name">
+						five <div class="icon five-icon">f</div>
+					</div>
+				</div>
+				<div class="argument">
+					<div class="argument-pin last"></div>
+				</div>
+			</div>
+		</div>
+		<div class="argument">
+			<div class="argument-pin">
+				<div class="argument-pin-number"><div class="icon number-icon">#</div> 2</div>
+				
+				<div class="description-wrapper">
+					<div class="description">
+						Third argument in the sequence.
+					</div>
+				</div>
+			</div>
+			<div class="input-connection">
+				<div class="connection-name">
+					<span>any</span>
+					<div class="icon any-icon">a</div>
+				</div>
+			</div>
+			<div class="output-connection">
+				<div class="connection-name"><div class="icon number-icon">n</div> number</div>
+			</div>
+			<div class="call">
+				<div class="operator-pin">
+					<div class="operator-pin-name">
+						42 <div class="icon number-icon">#</div>
+					</div>
+				</div>
+				<div class="argument">
+					<div class="argument-pin last"></div>
+				</div>
+			</div>
+		</div>
+		<div class="argument">
+			<div class="argument-pin last">
+				<div class="argument-pin-button">+</div>
+				
+				<div class="description-wrapper">
+					<div class="description">
+						Click to add another argument to the sequence.
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

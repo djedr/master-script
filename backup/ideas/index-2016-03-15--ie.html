@@ -1,0 +1,835 @@
+<!doctype html>
+<!-- todo: cleanup, values as variables -->
+<style>
+	body {
+		font-family: Consolas, monospace;
+		font-size: 13px;
+		background-color: #101010;
+	}
+	
+	/* tabular structure */
+	.call {
+		display: table;
+		width: 100%;
+	}
+	.argument, .operator {
+		display: table-row;
+	}
+	.argument-pin, .connection, .output-connection, .input-connection {
+		display: table-cell;
+	}
+	
+	/* table cells */
+	.connection-name {
+		border: 5px solid transparent;
+		border-image: url(border.png) 15 repeat;
+		border-left: 0;
+		border-right: 0;
+		
+		color: #bbb;
+		
+		margin-top: 1em;
+		
+		white-space: nowrap;
+	}
+	.argument-pin, .operator-pin {
+		background-color: #555;
+	}
+	.argument-pin {
+		border: 5px solid transparent;
+		border-image: url(border.png) 15 repeat;
+		border-top: 0;
+		border-bottom: 0;
+		
+		height: 100%
+		
+		color: #ffa;
+		
+		text-align: right;
+		
+		padding-right: 0;
+	}
+	.operator-pin {
+		border: 5px solid transparent;
+		border-image: url(border.png) 15 repeat;
+		border-bottom: 0;
+		border-left: 0;
+		
+		color: #bbb;
+		
+		padding-left: 0;
+	}
+	.last {
+		border-bottom: 5px solid transparent;
+		border-image: url(border.png) 15 repeat;
+		
+		text-align: center;
+	}
+	.argument-pin-number, .operator-pin-name, .argument-pin-button { /* just pin? */
+		background-color: #ccc;
+		color: #333;
+	}
+	.argument-pin-number {
+		margin-left: 1em;
+		margin-right: -5px;
+	}
+	.argument-pin-button {
+		margin-left: 1em;
+		margin-right: 1em;
+	}
+	.description-wrapper {
+		display: table;
+		
+		width: 100%;
+	}
+	.description {
+		display: table-caption;
+		
+		width: 100%;
+		
+		opacity: 0.5;
+		
+		color: #bbb;
+		
+		font-size: 0.75em;
+	}
+	.operator-description-wrapper {
+		display: table-cell;
+		
+		position: relative;
+		
+		width: 0;
+		
+		overflow: show;
+		
+		vertical-align: top;
+	}
+	.operator .description {
+		position: absolute;
+	}
+	.icon {
+		/font-size: 1.33em;
+		padding: 0 0.25em 0 0.25em;
+		opacity: 0.66;
+		border-radius: 0.3em;
+	}
+	.argument-pin-number .icon {
+		float: right;
+		
+		margin-left: 0.25em;
+	}
+	.operator-pin-name .icon {
+		float: left;
+		
+		margin-right: 0.25em;
+	}
+	.output-connection .icon, .input-connection .icon {
+		display: inline;
+	}
+	.input-connection {
+		text-align: right;
+	}
+	.output-connection {
+		text-align: left;
+	}
+	
+	/* icons */
+	.define-icon {
+		background-color: #023;
+		color: #8af;
+	}
+	.any-icon {
+		background-color: #004;
+		color: #9af;
+	}
+	.name-icon {
+		background-color: #413;
+		color: #bcd;
+	}
+	.value-icon {
+		background-color: #021;
+		color: #89c;
+	}
+	.five-icon {
+		background-color: #432;
+		color: #fac;
+	}
+	.number-icon {
+		background-color: #041;
+		color: #8f8;
+	}
+	.sequence-icon {
+		background-color: #441;
+		color: #fc8;
+	}
+	.symbol-icon {
+		background-color: #440;
+		color: #f88;
+	}
+	.plus-icon {
+		background-color: #040;
+		color: #9f8;
+	}
+	table {
+		border: 0;
+		border-spacing: 0;
+		border-collapse: separate;
+	}
+	td {
+		white-space: nowrap;
+		vertical-align: top;
+		color: #bbb;
+		padding: 0;
+		margin: 0;
+		border: 0;
+	}
+	.border-top {
+		background-image: url("border-top.png");
+		background-size: contain;
+		background-repeat: repeat;
+		height: 5px;
+		width: 100%;
+	}
+	
+	/*           */
+	/* ie styles */
+	/*           */
+	
+	/* tables */
+	.argument-description-table {
+		width: 1px; /* so it doesn't stretch the cell and instead the description overflows from it */
+	}
+	.call-table {
+		/width: 100%;
+	}
+	
+	/* captions */
+	.argument-description-cell {
+		width: 100%;
+		white-space: normal;
+		
+		color: rgb(255, 255, 255);
+		
+		text-align: right;
+		
+		font-size: 0.75em;
+		
+		zoom: 1;
+		filter: alpha(opacity=50);
+		opacity: 0.5;
+	}
+	
+	/* cells */
+	.call-cell, .argument-cell, .input-connection-cell, .output-connection-cell {
+		padding-top: 0.5em;
+	}
+	.operator-cell, .argument-cell {
+		background-color: #555;
+	}
+	.operator-cell {		
+		color: #bbb;
+		
+		padding-left: 0;
+	}
+	.argument-cell {		
+		text-align: right;
+		
+		padding-right: 0;
+	}
+	.argument-last-cell {		
+		text-align: center;
+		padding-top: 0;
+		padding-bottom: 1em;
+	}
+	.input-connection-cell {
+		text-align: right;
+	}
+	
+	/* divs */
+	.operator-div, .argument-div, .add-argument-button-div {
+		background-color: #bbb;
+		color: #222;
+	}
+	.operator-description-div {
+		position: absolute;
+		
+		width: 1000%;
+		
+		margin-left: 1em;
+		
+		font-size: 0.75em;
+		
+		zoom: 1;
+		filter: alpha(opacity=50);
+		opacity: 0.5;
+	}
+	.argument-div {
+		margin-left: 0.5em;
+	}
+	.argument-last-cell .argument-div {
+		margin-top: 0.5em;
+		margin-right: 0.5em;
+	}
+	.input-connection-div, .output-connection-div {
+		position: relative;
+		border-top: 1px solid #222;
+		border-bottom: 1px solid #bbb;
+		border-left: 0;
+		border-right: 0;
+		background-color: #bbb;
+		color: #222;
+		/font-size: 0.75em;
+		vertical-algin: middle;
+		/margin-top: 0.125em
+	}
+	.argument-div {
+		position: relative;
+	}
+	
+	.operator-div {
+		position: relative;
+		border: 1px solid #222;
+		border-bottom: 0;
+		border-left: 0;
+	}
+	
+	.input-connection-name {
+		margin-left: 0.5em;
+	}
+	
+	.output-connection-name {
+		margin-right: 0.5em;
+	}
+	
+	/*.input-connection-name, .output-connection-name {
+		display: none;
+	}
+	.operator-name, .argument-name {
+		display: none;
+	}
+	
+	.argument-cell, .argument-last-cell .argument-div, .input-connection-cell, .output-connection-cell, .call-cell {
+		padding: 0;
+		margin: 0;
+	}
+	
+	.argument-description-cell {
+		display: none;
+	}
+	
+	.argument-div, 
+	.argument-last-cell .argument-div,
+	.argument-last-cell .argument-name {
+		margin: 0;
+		padding: 0;
+	}*/
+	
+	.input-connection-div:before,
+	.output-connection-div:before,
+	.input-connection-div:after,
+	.output-connection-div:after,
+	.operator-div:before,
+	.operator-div:after,
+	.argument-div:before,
+	.argument-last-cell:before,
+	.argument-last-cell:after {
+		display: none;
+		position: absolute;
+		
+		z-index: 2;
+		opacity: 0.66;
+		
+		width: 0.8em;
+		height: 0.8em;
+		
+		line-height: 1.2em;
+		
+		text-align: center;
+		
+		font-size: 1.3em;
+		
+		border-radius: 0.33em;
+	}
+	
+	.input-connection-div:before,
+	.output-connection-div:before,
+	.operator-div:before,
+	.argument-last-cell:before,
+	.argument-last-cell:after
+	{
+		color: #bbb;
+		background-color: #222;
+	}
+	
+	.input-connection-div:after,
+	.output-connection-div:after,
+	.operator-div:after,
+	.argument-div:before {
+		color: #222;
+		background-color: #bbb;
+	}
+	
+	.input-connection-div:before,
+	.output-connection-div:before,
+	.operator-div:before {
+		bottom: -0.5em;
+		left: -0.5em;
+	}
+	
+	.argument-div:before,
+	.input-connection-div:after,
+	.output-connection-div:after {
+		top: -0.5em;
+		right: -0.5em;
+	}
+	
+	.output-connection-div:before,
+	.input-connection-div:after,
+	.output-connection-div:after {
+		line-height: 0.7em;
+	}
+	
+	.input-connection-div:after,
+	.output-connection-div:after {
+		content: "\2192";
+	}
+	
+	.input-connection-div:before {
+		content: "\2935";
+		
+		-ms-transform: scaleX(-1);
+		transform: scaleX(-1);
+	}
+	
+	.output-connection-div:before {
+		content: "\2190";
+	}
+	
+	.operator-div:before {
+		content: "\2936";
+		
+		transform: scaleY(-1);
+		-ms-transform: scaleY(-1);
+	}
+	
+	.operator-div:after {
+		content: "\2935";
+		
+		top: -0em;
+		right: -0em;
+	}
+	
+	.argument-div:before {
+		content: "\2937";
+	}
+	
+	.argument-last-cell:before {
+		content: "\2934";
+		
+		transform: scaleX(-1);
+		-ms-transform: scaleX(-1);
+		
+		bottom: 0em;
+		left: 0em;
+	}
+	
+	.argument-last-cell:after {
+		content: "\2936";
+		
+		bottom: 0em;
+		right: 0em;
+	}
+	
+	.argument-last-cell .argument-div:before {
+		content: "";
+		background-color: transparent;
+	}
+	
+	
+	.argument-cell {
+		border-left: 1px solid #bbb;
+		border-right: 1px solid #222;
+		position: relative;
+	}
+	
+	.input-connection-div {
+		margin-left: -1px; /* taking border into account */
+	}
+	
+	.argument-div {
+		margin-top: 1px; /* taking border into account */
+	}
+
+	.argument-last-cell {
+		border-bottom: 1px solid #bbb;
+	}
+	
+	.operator-name {
+		margin-right: 1em;
+	}
+	
+	.argument-name {
+		margin-left: 0.5em;
+	}
+	
+	
+	.operator-return-div {
+		position: absolute;
+		left: -0.33em;
+		bottom: -0.5em;
+		
+		color: #bbb;
+		
+		font-size: 1.2em;
+		z-index: 100;
+		
+		transform: rotate(90deg) scaleX(-1);
+		-ms-transform: rotate(90deg) scaleX(-1);
+	}
+	
+	.operator-div, .operator-name, .operator-cell {
+		border-top-right-radius: 0.33em;
+	}
+	.argument-last-cell {
+		border-bottom-right-radius: 0.33em;
+		border-bottom-left-radius: 0.33em;
+	}
+	
+	.argument-div {
+		border-top-left-radius: 0.33em;
+		border-bottom-left-radius: 0.33em;
+	}
+	
+	.argument-last-cell .argument-name {
+		display: none;
+	}
+	
+	.argument-last-cell .argument-div {
+		border-top-right-radius: 0.33em;
+		border-bottom-right-radius: 0.33em;
+	}
+	
+	.input-connection-div {
+		border-top-right-radius: 0.33em;
+		border-bottom-right-radius: 0.33em;
+	}
+	
+	.output-connection-div {
+		border-top-left-radius: 0.33em;
+		border-bottom-left-radius: 0.33em;
+	}
+	
+	body.show-arrows .input-connection-div:before,
+	body.show-arrows .output-connection-div:before,
+	body.show-arrows .operator-div:before,
+	body.show-arrows .argument-div:before,
+	body.show-arrows .argument-last-cell:before,
+	body.show-arrows *:after {
+		display: block;
+	}
+	
+	body.show-icons .icon {
+		display: inline;
+	}
+	
+	body.hide-icons .icon {
+		display: none;
+	}
+	
+	/* notes */
+	/*
+	 * class naming:
+	 * last word in name is the html tag (or a word that unambiguously identifies it, like cell-td, row-tr)
+	 * the class is for (it assumes some defaults anyway)
+	 * unless it's a span -- then there's no word at the end of the name
+	 */
+</style>
+<script>
+	function toggleArrows() {
+		if (document.body.className.indexOf('show-arrows') === -1) {
+			document.body.className += ' show-arrows';
+		} else {
+			document.body.className = document.body.className.replace('show-arrows', '');
+		}
+	}
+	function toggleIcons() {
+		if (document.body.className.indexOf('hide-icons') === -1) {
+			document.body.className += ' hide-icons';
+		} else {
+			document.body.className = document.body.className.replace('hide-icons', '');
+		}
+	}
+	function iconClick(name) {
+		return function () {
+			if (name.style.display === 'none') {
+				name.style.display = 'inline';
+			} else {
+				name.style.display = 'none';
+			}
+		}
+	}
+	window.addEventListener('load', function () {
+		var elements = document.querySelectorAll('.operator-div');
+		
+		console.log('load');
+		
+		for (var i = 0; i < elements.length; ++i) {
+			elements[i].querySelector('.icon').addEventListener('click', iconClick(elements[i].querySelector('.operator-name')));
+		}
+	});
+</script>
+<div>
+	<div style="color: #bbb" onclick="toggleArrows()">toggle arrows</div>
+	<div style="color: #bbb" onclick="toggleIcons()">toggle icons</div>
+</div>
+<table class="root-table">
+	<tr class="root-row">
+		<td class="input-connection-cell">
+			<div class="input-connection-div">
+				<span class="input-connection-name">any</span>
+				<span class="icon any-icon">a</span>
+			</div>
+		</td>
+		<td class="output-connection-cell">
+			<div class="output-connection-div">
+				<span class="icon any-icon">a</span>
+				<span class="output-connection-name">any</span>
+			</div>
+		</td>
+		<td class="call-cell">
+			<table class="call-table">
+				<tr class="operator-row"> <!-- operator row -->
+					<td class="operator-cell" style="position: relative"> <!-- operator cell/slot -->
+						<div class="operator-div" style="white-space: nowrap;"> <!-- operator -->
+							<span class="icon sequence-icon">s</span> <!-- operator icon/pin -->
+							<span class="operator-name">sequence</span> <!-- operator name -->
+						</div>
+					</td>
+					<td class="operator-description-cell">
+						<div class="operator-description-div">
+							Evaluates its arguments in order. Returns the value of the last.
+						</div>
+					</td>
+				</tr>
+				<tr class="argument-row"style="width: 100%">
+					<td class="argument-cell" style="width: 100%">
+						<div class="argument-div">
+							<span class="argument-name">0</span>
+							<span class="icon number-icon">#</span>
+						</div>
+						
+						<table class="argument-description-table">	
+							<tr>
+								<td class="argument-description-cell">
+								First argument in the sequence.
+								..........
+								.............
+								..................
+								...
+								.............
+								...
+								.......
+							</tr></td>
+						</table>
+					</td>
+					<td class="input-connection-cell"> <!-- td.input -->
+						<div class="input-connection-div"> <!-- div -->
+							<span class="input-connection-name">any</span> <!-- span.name -->
+							<span class="icon any-icon">a</span> <!-- span.[icon any-icon] -->
+						</div>
+					</td>
+					<td class="output-connection-cell">
+						<div class="output-connection-div">
+							<span class="icon any-icon">a</span>
+							<span class="output-connection-name">any</span>
+						</div>
+					</td>			
+					<td class="call-cell">
+						<table class="call-table">
+							<tr class="operator-row"> <!-- operator row -->
+								<td class="operator-cell"> <!-- operator cell/slot -->
+									<div class="operator-div"> <!-- operator -->
+										<span class="icon define-icon">d</span> <!-- operator icon/pin -->
+										<span class="operator-name">define</span> <!-- operator name -->
+									</div>
+								</td>
+								<td class="operator-description-cell">
+									<div class="operator-description-div">
+										Defines a variable with a given name and value.
+									</div>
+								</td>
+							</tr>
+							<tr class="argument-row">
+								<td class="argument-cell">
+									<div class="argument-div">
+										<span class="argument-name">name</span>
+										<span class="icon name-icon">n</span>
+									</div>
+									
+									<table class="argument-description-table">
+										<tr>
+											<td class="argument-description-cell">
+											</td>
+										</tr>
+									</table>
+								</td>
+								<td class="input-connection-cell"> <!-- td.input -->
+									<div class="input-connection-div"> <!-- div -->
+										<span class="input-connection-name">symbol</span> <!-- span.name -->
+										<span class="icon symbol-icon">s</span> <!-- span.[icon any-icon] -->
+									</div>
+								</td>
+								<td class="output-connection-cell">
+									<div class="output-connection-div">
+										<span class="icon symbol-icon">s</span>
+										<span class="output-connection-name">symbol</span>
+									</div>
+								</td>
+								<td class="call-cell">
+									<table class="call-table">
+										<tr class="operator-row">
+											<td class="operator-cell">
+												<div class="operator-div">
+													<span class="icon five-icon">f</span>
+													<span class="operator-name">five</span>
+												</div>
+											</td>
+										</tr>
+										<tr class="argument-row">
+											<td class="argument-cell argument-last-cell"></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr class="argument-row">
+								<td class="argument-cell">
+									<div class="argument-div">
+										<span class="argument-name">value</span>
+										<span class="icon value-icon">v</span>
+									</div>
+									
+									<!-- description 2 -->
+								</td>
+								<td class="input-connection-cell">
+									<div class="input-connection-div">
+										<span class="input-connection-name">any</span>
+										<span class="icon any-icon">a</span>
+									</div>
+								</td>
+								<td class="output-connection-cell">
+									<div class="output-connection-div">
+										<span class="icon number-icon">n</span>
+										<span class="output-connection-name">number</span>
+									</div>
+								</td>
+								<td class="call-cell">
+									<table class="call-table">
+										<tr class="operator-row">
+											<td class="operator-cell">
+												<div class="operator-div">
+													<span class="icon number-icon">#</span>
+													<span class="operator-name">42</span>
+												</div>
+											</td>
+										</tr>
+										<tr class="argument-row">
+											<td class="argument-cell argument-last-cell"></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr class="argument-row">
+								<td class="argument-cell argument-last-cell"></td>
+							</tr>
+						</table>
+						<!-- end call-cell -->
+					</td>
+				</tr>
+				<tr class="argument-row">
+					<td class="argument-cell">
+						<div class="argument-div">
+							<span class="argument-name">1</span>
+							<span class="icon number-icon">#</span>
+						</div>
+						
+						<!-- description 2 -->
+					</td>
+					<td class="input-connection-cell">
+						<div class="input-connection-div">
+							<span class="input-connection-name">any</span>
+							<span class="icon any-icon">a</span>
+						</div>
+					</td>
+					<td class="output-connection-cell">
+						<div class="output-connection-div">
+							<span class="icon number-icon">n</span>
+							<span class="output-connection-name">number</span>
+						</div>
+					</td>
+					<td class="call-cell">
+						<table class="call-table">
+							<tr class="operator-row">
+								<td class="operator-cell">
+									<div class="operator-div">
+										<span class="icon five-icon">f</span>
+										<span class="operator-name">five</span>
+									</div>
+								</td>
+							</tr>
+							<tr class="argument-row">
+								<td class="argument-cell argument-last-cell"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr class="argument-row">
+					<td class="argument-cell">
+						<div class="argument-div">
+							<span class="argument-name">2</span>
+							<span class="icon number-icon">#</span>
+						</div>
+						
+						<!-- description 3 -->
+					</td>
+					<td class="input-connection-cell">
+						<div class="input-connection-div">
+							<span class="input-connection-name">any</span>
+							<span class="icon any-icon">a</span>
+						</div>
+					</td>
+					<td class="output-connection-cell">
+						<div class="output-connection-div">
+							<span class="icon number-icon">n</span>
+							<span class="output-connection-name">number</span>
+						</div>
+					</td>
+					<td class="call-cell">
+						<table class="call-table">
+							<tr class="operator-row">
+								<td class="operator-cell">
+									<div class="operator-div">
+										<span class="icon number-icon">#</span>
+										<span class="operator-name">42</span>
+									</div>
+								</td>
+							</tr>
+							<tr class="argument-row">
+								<td class="argument-cell argument-last-cell"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr class="argument-row">
+					<td class="argument-cell argument-last-cell">
+						<div class="argument-div">
+							<span class="argument-name"></span>
+							<span class="icon plus-icon">+</span>
+						</div>
+						
+						<!-- description 4 -->
+					</td>
+				</tr>
+			</table>
+		</td>
+	</tr>
+</table>

@@ -1,0 +1,36 @@
+if (a) {
+
+} else {
+
+}
+
+if (a) {
+	b;
+}
+
+if (a)
+	b;
+
+int x = if (a) { b } else { c };
+
+boolean[0] \'[equivalent to false]
+string[0] \'[equivalent to ""]
+integer[0] \'[equivalent to 0]
+float[0] \'[equivalent to 0.0]
+array[0] \'[equivalent to @[]]
+pointer[0] \'[equivalent to null]
+object[0] \'[equivalent to {}]
+void[0] \'[equivalent to undefined]
+
+strict-if/sif -- conditional that only treats a boolean 0 as false
+
+sif[
+	integer[0]
+	number[1] \'[this will get returned]
+	number[0] \'[this will not]
+]
+
+\'[comment]
+\;[comment]
+\=[comment]
+\/[comment]

@@ -1,0 +1,28 @@
+lazy [a b c] [
+	match [a]
+	| of [true] [b]
+	| c
+]!
+
+manual [a b c] [
+	match [eval[a]]
+	| of [true] [eval[b]]
+	| eval[c]
+]!
+
+explicit [a b c] [
+	match [eval[a]]
+	| of [true] [eval[b]]
+	| eval[c]
+]!
+
+delay | +[1 2]
+lazy | +[1 2]
+
+force | delay | +[1 2]
+http://c2.com/cgi/wiki?ExplicitLazyProgramming
+
+each delayed expression is only evaluated once, the first time it is forced, and then it is memoized thereafter
+
+so it's a macro
+force is a macro

@@ -22,6 +22,32 @@ var run_argument_event_listener = (event) => {
     console.log("hi");
 };
 
+var rootEnv = {
+    // meta
+    "[imported paths]": {},
+
+    // regular
+    "true": true,
+    "false": false,
+    "undefined": undefined,
+    "is-defined": (a) => { return a !== undefined; },
+    "not": (a) => { return !a; },
+    "=": (a, b) => { return a === b; }, // Object.is?
+    "<>": (a, b) => { return a !== b; }, // !Object.is?
+    "+": (a, b) => { return a + b; },
+    "-": (a, b) => { return a - b; },
+    "-#": (a) => { return -a; }, // unary minus
+    "*": (a, b) => { return a * b; },
+    "/": (a, b) => { return a / b; },
+    "<": (a, b) => { return a < b; },
+    ">": (a, b) => { return a > b; },
+    "<=": (a, b) => { return a <= b; },
+    ">=": (a, b) => { return a >= b; },
+    //"set-page": (str) => { document.getElementById("page").srcdoc = str; },
+    "page": () => { return document.getElementById("page").contentWindow.document.getElementById("canvas-A"); },
+    "window": window
+};
+
 function separate(expression_string) {
     var first = expression_string.search(/\S/);
 
@@ -247,7 +273,8 @@ function parseExpression(prefix, expression_string, character_index, parent) {
 function parse(expression_string, options) {
   var result, separated,
       character_index,
-      expression;
+      expression,
+      rootOperator;
 
     options = options || { character_index: 0, expression: null };
     character_index = options.character_index;
@@ -255,11 +282,10 @@ function parse(expression_string, options) {
 
     // NOTE: this might be too simplistic
     // could check if there's more than one top-level expression first
-    expression_string =
-`sequence[
-${expression_string}
-]`;
-    character_index -= 10;
+    rootOperator = "module[";
+    expression_string = rootOperator + expression_string + ']';
+
+    character_index -= rootOperator.length;
 
     emitEvent('parse:initialize', options);
 
@@ -1234,6 +1260,39 @@ specialForms["do"] = function(args, env) {
 
 specialForms["sequence"] = specialForms["do"];
 
+
+specialForms["module"] = function(args, env) {
+    args.forEach(function(arg, i) {
+        evaluate(arg, env, i);
+    });
+    return env;
+};
+
+specialForms["import"] = function(args, env) {
+    var path = evaluate(args[0], env, 0);
+
+    var importedPaths = env["[imported paths]"];
+
+    if (importedPaths[path]) {
+        return importedPaths[path];
+    }
+
+    localStorage.setItem('pathToRead', path);
+    // var reader = new FileReader();
+    // reader.onloadend = function(event) {
+    //     var result = event.target.result;
+    //     console.log(result);
+    // };
+    // reader.readAsDataURL(path);
+
+    var code = "";
+    // rootEnv is basic functions, etc. same as in editor.ts
+    //var modEnv = evaluate(parse(code), rootEnv, 0); // shouldn't visualise -- maybe a flag option to parse?
+    var modEnv = {}; // shouldn't visualise -- maybe a flag option to parse?
+    importedPaths[path] = modEnv;
+
+    return modEnv;
+};
 
 specialFormsArgumentNames["define*"] = ["name", "value"];
 specialForms["define*"] = function(args, env) {

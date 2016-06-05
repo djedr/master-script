@@ -1,0 +1,24 @@
+structure conscious editor
+	no need for linefeed
+	
+	raw text mode
+		but only a part
+		could initially use codemirror for that
+		
+		click on line area to switch
+	
+	minimap
+
+eventually rid of codemirror
+	but borrow good ideas
+	drawing only relevant part
+	
+click on prefix:
+	and start typing
+		add argument before
+		autoposition, autoprefix
+	and backspace/space
+		modify prefix
+			what about other prefixes?
+			
+	no need for tabs and shiz

@@ -1,0 +1,1089 @@
+define[five]|#|5
+
+parser-recognised literal numbers and strings
+literal values
+
+escape char: $:
+"[Hello, $[name]!]
+"[Hello,$n$[name]!]
+
+"[Square brackets: $( and $).]
+"[Eval expr: $[expr] <=> $expr]
+"[Square brackets: $[(] and $[)].]
+"[Square brackets: $|( and $|).]
+"[Square brackets: |( and |).]
+
+"[Square brackets: $[(] and $[)].]
+
+"[Hello,$[n]$[name]!]
+"[Hello,|[n]|[name]!]
+"[Hello,[n][name]!]
+"[Square brackets: [(] and [)].]
+"[I said: "[(]Square brackets: [(]([)] and [(])[)].[)]]
+"[I said: "[([Square brackets: [([ and ]].]]]
+"[I said: "[[Square brackets: [[ and ]].]]]
+"[I said: "[(Square brackets: [( and )].)]]
+
+
+"[Square brackets: [( and )].]
+"[Square brackets: [| and ].]
+
+"[Hello, [$|name].]
+
+
+comments @ parser level?
+	yup
+
+parse time values / literals
+runtime values
+
+object literal
+JSON-compatibile
+%[
+	:['|Buttons]|@['|Left '|Right '|Up '|Down]
+	:['|Orient]|%[
+		:['|Pitch]|#[72]
+		:['|Roll]|#[18]
+	]
+	:['|Extnsn]|%[
+		:['|Nunchuk]|%[
+			:['|Buttons]|@['|C '|Z]
+			:['|Orient]|%[
+				:['|Pitch]|#[32]
+				:['|Roll]|#[0]
+			]
+		]
+	]
+]
+
+--[w/o quotes]
+&[
+	@[Buttons] | ^[Left Right Up Down]
+	@[Orient]  | &[
+		@[Pitch] | #[72]
+		@[Roll]  | #[18]
+	]
+	@[Extnsn]  | &[
+		@[Nunchuk] | &[
+			@[Buttons] | ^[C Z]
+			@[Orient]  | &[
+				@[Pitch] | #[32]
+				@[Roll]  | #[0]
+			]
+		]
+	]
+]
+
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: 72
+		Roll: 18
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: 32,
+				Roll: 0
+			}
+		}
+	}
+}]
+
+JSON-string
+native json support
+js coloring inside json[]
+
+--[escape []]
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: 72,
+		Roll: 18
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: 32,
+				Roll: 0
+			}
+		}
+	}
+}]
+
+--[everything between balanced pair of [] including [] is put back to the string]
+--[expressions are denoted: |[expr] or [|expr|]]
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: |[main-pitch],
+		Roll: |[main-roll]
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: |[nunchuk-pitch],
+				Roll: |[nunchuk-roll]
+			}
+		}
+	}
+}]
+
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: [|main-pitch|],
+		Roll: [|main-roll|]
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: [|nunchuk-pitch|],
+				Roll: [|nunchuk-roll|]
+			}
+		}
+	}
+}]
+
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: [|main-pitch],
+		Roll: [|main-roll]
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: [|nunchuk-pitch],
+				Roll: [|nunchuk-roll]
+			}
+		}
+	}
+}]
+
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: [dual|main-pitch],
+		Roll: [dual|main-roll]
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: [dual|nunchuk-pitch],
+				Roll: [dual|nunchuk-roll]
+			}
+		}
+	}
+}]
+
+
+json[{
+	Buttons: [Left, Right, Up, Down],
+	Orient: {
+		Pitch: |dual[main-pitch],
+		Roll: |dual[main-roll]
+	},
+	Extnsn: {
+		Nunchuk: {
+			Buttons: [C, Z],
+			Orient: {
+				Pitch: |dual[nunchuk-pitch],
+				Roll: |dual[nunchuk-roll]
+			}
+		}
+	}
+}]
+
+
+aaa|[]
+
+aaa|bbb|
+aaa[ddd[sss]]
+fff[ffff
+rrr]rrr
+fff[|ffff
+rrr|]rrr
+
+[| => [
+|] => ]
+[|] => []
+|| => |
+|.*| 
+
+|x[...]
+|[...]
+
+function parseString(str, method = "interpolate-string!") {
+	var ret = "", strs = [], exprs = [], currentStr = "", index = 0, ch, bracket = 0, exprBracket = 0, first, exprOn = false,
+		isExprFirst = (str[0] === "|"), strLiterals;
+	
+	while (bracket >= 0) {
+		first = str.search(/\[|\]|\|/); // str should be updated
+		
+		currentStr += str.slice(index, first);
+		
+		ch = str[first];
+		
+		if (ch === "[") {
+			++bracket;
+			if (exprOn) {
+				++exprBracket;
+			}
+		} else if (ch === "]") {
+			--bracket;
+			if (exprOn) {
+				--exprBracket;
+				if (exprBracket === 0) {
+					exprOn = false;
+					if (currentStr[0] === "[") {
+						exprs.push(parse(currentStr.slice(1)).expression);
+					} else {
+						exprs.push(parse(currentStr + "]").expression);
+					}
+					currentStr = "";
+				}
+			}
+		} else { // |
+			strs.push(currentStr);
+			currentStr = "";
+			// begin expression
+			exprOn = true;
+		}
+		str = str.slice(first + 1);
+	}
+	
+	if (strs.length > 0) {
+		strs.push(currentStr);
+		strLiterals = convertToLiterals(strs);
+		// template string
+		return {
+			type: "apply",
+			args: [strLiterals, exprs, isExprFirst],
+			operator: {
+				name: method,
+				...
+			}
+			...
+		}
+	} else {
+		// raw string
+		return {
+			type: "value",
+			value: currentStr,
+			...
+		}
+	}
+}
+
+`[method]|'[this is a string to interpolate|[point]] --[` is a macro to change the method]
+
+
+def[interpolate-string!]
+	|fun[strs vals is-expr-first][
+		def[ret]['\] --[zero-arg invocation]
+		def[first second]
+		if[is-expr-first][
+			set[first][vals]
+			set[second][strs]
+		]
+		|else[
+			set[first][strs]
+			set[second][strs]
+		]
+		
+		for[i 0][i < length|first][increment|i][
+			concat[ret to-string|at[first i] to-string|at[second i]]
+		]
+		ret
+	]
+	
+macro|def[for]
+	|fun[name value]
+		|fun[a op b]
+			|fun[op2]
+				|fun[...|args] --[could be fun-var[args] or fun...[args]]
+					|code[
+						do[
+							def[name][value]
+							while[?[a op b]
+								do[...!|args op2] --[could be ...[do args op2]]
+							]
+						]
+					]
+					
+... works at parse time
+
+defines a var holding current args
+// must be a way to access current args in other way
+
+...! concatenates its args to current op's args
+
+special form:
+apply![f args-array]
+	args-array is a dual array
+apply calls f with arguments from the array
+
+special form:
+get-args![]
+	gets current functions arguments -- innermost environment
+	could have a parameter specifying environment level perhaps
+
+use javascript parsers and shit
+
+#[...] -> (substitute) -> Number(...)
+json[...] -> (substitute) -> JSON.parse(...)
+
+fun...[a b c] -> c is all remaining args
+...[x y z v b] -> x is op to be called; y z v b will be flattened and then fed to x as arguments
+
+
+macro|def[for]
+	|fun[name value]
+		|fun[a op b]
+			|fun[op2]
+				|fun...[args]
+					|code[
+						do[
+							def[!|name][!|value]
+							while[?[!|a !|op !|b]
+								...[do !|args !|op2]
+							]
+						]
+					]
+			
+code is quote
+! or macro is unquote
+
+
+macro|def[for]|fun[name value]|fun[a op b]|fun[op2]|fun...[args]|code[
+	do[
+		def[!|name][!|value]
+		while[?[!|a !|op !|b]
+			...[do !|args !|op2]
+		]
+	]
+]
+
+
+macro|def[for]|/[name value]|/[a op b]|/[op2]|/...[args]
+	|code[
+		do[
+			def[!|name][!|value]
+			while[?[!|a !|op !|b]
+				...[do !|args !|op2]
+			]
+		]
+	]
+	
+//[args][defines][body]
+
+//[a b][sum][
+	set![sum]|#[a + b]
+	#[sum * sum]
+]
+
+/d
+[a b]
+[sum]
+[#[a + b]]
+[
+	#[sum * sum]
+]
+
+#[|[sum] * |[sum]]
+#[|sum| * |sum|]
+#[[sum] * [sum]]
+#[{sum} * {sum}]
+
+#[${sum} * ${sum}]
+
+--[you decide escape characters]
+
+json[{
+	"A": 2,
+	"B": ${b-value}
+}]
+
+json-e[!()][{
+	"C": !(x)
+}]
+
+json-e[!(][)][
+
+]
+
+str[open][close][
+	...
+]
+
+normal escape:
+[ ]
+
+json escape:
+$[ ]
+
+
+function parseString(str, method = "interpolate-string!") {
+	var ret = "", strs = [], exprs = [], currentStr = "", index = 0, ch, bracket = 0, exprBracket = 0, first, exprOn = false,
+		isExprFirst = (str[0] === "|"), strLiterals;
+	
+	while (bracket >= 0) {
+		first = str.search(/\[|\]/); // str should be updated
+		
+		currentStr += str.slice(index, first);
+		
+		ch = str[first];
+		
+		if (ch === "[") {
+			++bracket;
+		} else if (ch === "]") {
+			--bracket;
+		}
+		
+		if (ch === open) {
+			if (exprOn) {
+				++exprBracket;
+			} else {
+				strs.push(currentStr);
+				currentStr = "";
+				exprOn = true;
+			}
+		} else if (ch === close && exprOn) {
+			--exprBracket;
+			if (exprBracket === 0) {
+				exprOn = false;
+				exprs.push(parse(currentStr).expression);
+				
+				currentStr = "";
+			}
+		}
+		str = str.slice(first + 1);
+	}
+	
+	if (strs.length > 0) {
+		strs.push(currentStr);
+		strLiterals = convertToLiterals(strs);
+		// template string
+		return {
+			type: "apply",
+			args: [strLiterals, exprs, isExprFirst],
+			operator: {
+				name: method,
+				...
+			}
+			...
+		}
+	} else {
+		// raw string
+		return {
+			type: "value",
+			value: currentStr,
+			...
+		}
+	}
+}
+
+1. get string
+2. break it down
+
+function parseString(str, open = '{', close = '}', method = "interpolate-string!") {
+	var ret = "", strs = [], exprs = [], currentStr = "", index = 0, ch, bracket = 0, exprBracket = 0, first, exprOn = false,
+		isExprFirst = (str[0] === "|"), strLiterals;
+	
+	while (bracket >= 0) {
+		first = str.slice(index).search(/\[|\]/); // str should be updated
+		
+		ch = str[first];
+		
+		if (ch === "[") {
+			++bracket;
+		} else if (ch === "]") {
+			--bracket;
+		}
+		
+		index += first + 1;
+	}
+	
+	
+	var str2 = str.slice(0, index), begin, end;
+	first = 0;
+			
+	while (first >= 0) {
+		first = str2.slice(index).search(open);
+	
+		if (first !== -1) {
+			if (exprOn) {
+				++exprBracket;
+			} else {
+				strs.push(str2.slice(index, first));
+				exprOn = true;
+				begin = first + 1;
+			}
+		}
+		
+		if (exprOn) {
+			first = str2.slice(index).search(close);
+			
+			if (first !== -1) {
+				--exprBracket;
+				if (exprBracket === 0) {
+					exprOn = false;
+					exprs.push(parse(str2.slice(begin, first)).expression);
+				}
+			} else {
+				// error: expression not closed
+			}
+		}
+		
+		index += first + 1;
+	}
+	
+	if (strs.length > 0) {
+		strs.push(currentStr);
+		strLiterals = convertToLiterals(strs);
+		// template string
+		return {
+			type: "apply",
+			args: [strLiterals, exprs, isExprFirst],
+			operator: {
+				name: method,
+				...
+			}
+			...
+		}
+	} else {
+		// raw string
+		return {
+			type: "value",
+			value: currentStr,
+			...
+		}
+	}
+}
+
+'[Hello, [name]]
+
+'[Hello, {get-name[]}]
+
+def[who]\'[you fool]
+def[what]\'[I love you]
+'[Hello, hello, {who}, {what}!]
+
+macro\def[for]\/[name value]\/[a op b]\/[op2]\/...[args]
+	\code
+		\do[
+			def[!\name][!\value]
+			while_[?[!\a !\op !\b]
+				...[do !\args !\op2]
+			]
+		]
+
+\ is quicker to type
+
+factorial\n
+factorial|n
+
+def[five]\#[5]
+
+'|
+
+#|
+
+initialize|
+
+def[sth]|
+def[sth]\
+def[sth][]
+
+boundary rules
+
+! -- macro
+^ -- code
+
+` -- code
+, -- macro
+
+
+,\def[for]\/[name value]\/[a op b]\/[op2]\/...[args]
+	\`\do[
+		def[,\name][,\value]
+		while_[?[,\a ,\op ,\b]
+			...[do ,\args ,\op2]
+		]
+	]
+
+!\def[for]\/[name value]\/[a op b]\/[op2]\/...[args]
+	\^\do[
+		def[!\name][!\value]
+		while_[?[!\a !\op !\b]
+			...[do !\args !\op2]
+		]
+	]
+
+macros are global?
+
+macros are a separate space
+
+if{a < 2}{
+	ax
+	bx
+	cx
+}|else{
+	dx
+	ex
+	fx
+}
+
+go through all nodes
+	expand macros
+		i.e. nodes that have names in macroEnvironment
+		
+!/macro --[switch space to macros]
+^/code --[switch space to code]
+
+!\if[a < 2][
+
+]\else[
+
+]
+
+!\def[for]\/[name value]\/[a op b]\/[op2]\/...[args]
+	\^\do[
+		def[name][value]
+		while_[?[a op b]
+			...[do args op2]
+		]
+	]
+
+for[i 1][i <= 100][+1\i][
+	def[str]\'|
+	
+	if[#[i mod 3] = 0]
+		\append[str]['\Fizz]
+		
+	if[#[i mod 5] = 0]
+		\append[str][if[str == 0]['|]\'[ ] '\Buzz] --[if[str !== 0]\'[ ]]
+		
+	if[str == 0]
+		\append[str][to'\i]	 --[append[str][i]]
+]
+
+
+
+for[i 1][i <= 100][+1\i][
+	def[str]|'[]
+	
+	if[#[i mod 3] = 0]
+		|append[str]|'|Fizz
+		
+	if[#[i mod 5] = 0]
+		|append[str][if[str <>' 0]|'[ ] '|Buzz]
+		
+	if[str =' 0]
+		|append'[str]|i
+]
+
+
+for[i 1][i <= 100][+1\i][
+	def[str]\'[]
+	
+	if[#[i mod 3] = 0]
+		\append[str]\'\Fizz
+		
+	if[#[i mod 5] = 0]
+		\append[str][if[str <>' 0]\'[ ] '\Buzz]
+		
+	if[str =' 0]
+		\append'[str]\i
+]
+
+debug macros
+
+macro expansion together with eval
+check if a thing in env has type macro
+
+
+
+fun[long_function_name][
+    var_one
+    var_two
+    var_three
+    var_four
+][
+    print[var_one]
+]
+
+number literals:
+begin with number, include numbers and a dot
+no signs
+
+-#\3
+
+alias
+
+-\3
+
+convention (perhaps recognized by parser):
+=' =# =@ =? op' op# op@ op...
+the last character specifies that the operands should be first coerced to that type
+
+= is equivalent to =#?
+nope;
+= doesn't coerce; compares types and values
+
+special characters:
+[] multi-arg invocation
+\ zero-arg invocation or macro splice/unquote or function or macro
+; zero-arg invocation?
+| single-arg invocation
+
+pairing characters:
+{}
+()
+
+' string
+" string (more options, like method of interpolation, escape chars, etc)
+# number (reserved for integer)
+% number (reserved for float)
+^ function or macro
+_ macro-function or macro-splice
+` code
+& object
+@ attribute or while
+$ array
+
+? boolean? or if
+~ boolean?
+
+! zero-arg invocation?
+.
+,
+: signifies invocation or do
+
+
+arithmetic:
+* times mul
++ plus add
+- minus sub
+/ by div
+mod
+
+logic:
+< less-than lt
+> greater-than gt
+<= less-than-or-equal lte le
+>= greater-than-or-equal gte ge
+= equal equals eq e
+<> not-equal neq ne
+lt gt le ge eq ne
+l g le ge e lg
+
+strings:
+json" -- escape ${}
+js" -- escape ${}
+html" -- escape {{}}
+
+
+def[factorial]\^#[n][
+	if[n <= 1][
+		1
+	]\else[
+		#[n * factorial\#[n - 1]]
+	]
+]
+
+def[f]\^#[a# b#][
+	...
+]
+
+def[f]\fun:num[a:num b:num][
+	...
+]
+
+def[f]\function:number[a:number b:number][
+	...
+]
+
+def[f]\function(number)[a(number) b(number)][
+	...
+]
+
+sig-def
+[number -> number]
+[factorial]\^[n][
+	if[n <= 1][
+		1
+	]\else[
+		#[n * factorial\#[n - 1]]
+	]
+]
+
+sig-def
+[number -> number]
+[factorial]\^[n][
+	if[n <= 1][
+		1
+	]\else[
+		#[n * #![factorial n - 1]]
+	]
+]
+
+
+sig-def
+[number -> number]
+[factorial]|^[n][
+	if[n <= 1][
+		1
+	]|else[
+		#[n * factorial|#[n - 1]]
+	]
+]
+
+sig-def
+[number -> number]
+[factorial]|function[n][
+	if[n <= 1][
+		1
+	]|else[
+		number[n * factorial|number[n - 1]]
+	]
+]
+
+| harder to type; less standing out; more visually pleasing, aesthetic
+
+'string'
+raw "string"
+
+=string
+
+=:string
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro...[args] -- macro[...|args]
+	|code-string[
+		do[
+			define[{name}][{value}]
+			while[boolean[{a} {op} {b}]
+				...[do {args} {op2}]
+			]
+		]
+	]
+code'[] -- regular coloring, just more opacity or something; or desaturate
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[...]
+	|code-string[
+		do[
+			define[{name}][{value}]
+			while[boolean[{a} {op} {b}]
+				...![do {...} {op2}] -- ...![do {op2}] -- then {...} would be implicit
+			]
+		]
+	]
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[{name}][{value}]
+			while[boolean[{a} {op} {b}]
+				$![do {body} {op2}]	
+			]
+		]
+	]
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[{name}][{value}]
+			while[boolean[{a} {op} {b}]
+				$![do {body} {op2}]	
+			]
+		]
+	]
+	
+	
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[{if[...][name][]}][{value}]
+			while[boolean[{a} {op} {b}]
+				$![do {body} {op2}]	
+			]
+		]
+	]
+	
+if[x][y]\
+
+expressions = [{if[...][name][]}, {value}, {a}, {op}, {b}, {body}, {op2}];
+ret = code-string[
+	do[
+		define[{0}][{1}]
+		while[boolean[{2} {3} {4}]
+			$![do {5} {6}]	
+		]
+	]
+]
+code-string[
+	do[
+		define[{0}][{1}]
+		while[boolean[{2} {3} {4}]
+			$![do {5} {6}]	
+		]
+	]
+]
+
+{0} -- placeholder node; value: 0
+
+
+macro-string[if[...][name][]]
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[![if[...][name][]]][![value]]
+			while[boolean[![a] ![op] ![b]]
+				$![do ![body] ![op2]]	
+			]
+		]
+	]
+
+
+{a[b[{c}]]}
+
+macroexpand until there's no macros
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[\[if[...][name][]]][\|value]
+			while[boolean[\|a \|op \|b]
+				$![do \|body \|op2]	
+			]
+		]
+	]
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[\[if[...][name];]][\|value]
+			while[boolean[\|a \|op \|b]
+				$![do \|body \|op2]	
+			]
+		]
+	]
+	
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[\[if[...][name]!]][\|value]
+			while[boolean[\|a \|op \|b]
+				$![do \|body \|op2]	
+			]
+		]
+	]
+
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code-string[
+		do[
+			define[_[if[...][name]!]][_|value]
+			while[boolean[_|a _|op _|b]
+				$:[do _|body _|op2]	
+			]
+		]
+	]
+	
+\ macro
+^ function
+or the other way around
+
+_ macro splice
+! zero-arg invocation
+
+define [for] | macro [name value] | macro [a op b] | macro [op2] | macro [$body]
+	| code-string [
+		do [
+			define [_ [if [...] [name]!]][_ | value]
+			while [boolean [_ | a _ | op _ | b]
+				$: [do _ | body _ | op2]
+			]
+		]
+	]
+
+
+-> [for] | ^ [name value] | ^ [a op b] | ^ [op2] | ^ [$body]
+	| ` [
+		do [
+			-> [_ [? [...] [name]!]][_ | value]
+			while [~ [_ | a _ | op _ | b]
+				$: [do _ | body _ | op2]
+			]
+		]
+	]
+	
+
+<-[for]|^[name value]|^[a op b]|^[op2]|^[$body]
+	|`|:[
+		<-[_[?[...][name]!]][_|value]
+		@[~[_|a _|op _|b]
+			$&[: _|body _|op2]
+		]
+	]
+	
+def[for]|mac[name value]|mac[a op b]|mac[op2]|mac[$body]
+	|code|do[
+		def[_|if[...][name]!][_|value]
+		while[bool[_|a _|op _|b]
+			apply[do _|body _|op2]
+		]
+	]
+
+def[for]|mac[name value]|mac[a op b]|mac[op2]|mac[$body]
+	|code|do[
+		def[insert|if[...][name]!][insert|value]
+		while[bool[insert|a insert|op insert|b]
+			apply[do insert|body insert|op2]
+		]
+	]
+	
+define[for]|macro[name value]|macro[a op b]|macro[op2]|macro[$body]
+	|code|do[
+		define[insert|if[boolean|true][name]!][insert|value]
+		while[boolean[insert|a insert|op insert|b]
+			apply[do insert|body insert|op2]
+		]
+	]
+
+define
+[for]
+|macro[name value]
+|macro[a op b]
+|macro[op2]
+|macro[$body]
+	|code|do[
+		define
+		[insert|if[boolean|true][name]!]
+		[insert|value]
+		
+		while[
+			boolean[insert|a insert|op insert|b]
+			apply[do insert|body insert|op2]
+		]
+	]
+
+if invoking object:
+obj[x]
+
+if typeof op === object
+
+do obj.x
+
+so
+	obj|x[] -- or obj|x!
+becomes
+	obj.x()

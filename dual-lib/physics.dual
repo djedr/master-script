@@ -1,0 +1,55 @@
+--
+-- physics
+--
+
+bind [+vec]
+| of [list[x1 y1] list[x2 y2]] [list[+[x1 x2] +[y1 y2]]]
+!
+
+bind [-vec]
+| of [list[x1 y1] list[x2 y2]] [list[-[x1 x2] -[y1 y2]]]
+!
+
+bind [*vec]
+| of [list[x1 y1] s] [list[*[x1 s] *[y1 s]]]
+!
+
+bind [line-circle-collision]
+| of [line circle] [
+	bind [d] [-vec[.[line 1] .[line 0]]]
+	bind [f] [-vec[.[line 0] .[circle 0]]]
+	
+	bind [a] |+[square|.[d 0] square|.[d 1]]
+	bind [b] |*[2 +[*[.[f 0] .[d 0]] *[.[f 1] .[d 1]]]]
+	--bind [b] |*[2 +[
+	--		*[.[f 0] .[d 0]] 
+	--		*[.[f 1] .[d 1]]
+	--]]
+	-- bind [b] |*[2 +[*[f|0 d|0] *[f|1 d|1]]] -- perhaps this notation should be supported for lists
+	bind [c] |-[+[square|.[f 0] square|.[f 1]] square|.[circle 1]]
+	bind [delta] |-[square|b *[4 *[a c]]] -- *[4 a c]
+	
+	if [>=[delta 0]] [
+		mutate* [delta .[widnow Math sqrt][delta]]
+		
+		bind [t1] |/[-[-#|b delta] *[2 a]]
+		bind [t2] |/[+[-#|b delta] *[2 a]]
+		
+		or[and[>=[t1 0] <=[t1 1]] and[>=[t2 0] <=[t2 1]]]
+	]
+	| false
+]!
+
+bind [circle-circle-collision]
+| of [circle-1 circle-2] [
+	bind [v] |-vec[.[circle-1 0] .[circle-2 0]]
+	bind [r] |+[.[circle-1 1] .[circle-2 1]]
+	
+	<[+[square|.[v 0] square|.[v 1]] square|r]
+]!
+
+bind [point-distance]
+| of [p1 p2] [
+	bind [diff] |-vec[p1 p2]
+	.[window Math sqrt]|+[square|.[diff 0] square|.[diff 1]]
+]!

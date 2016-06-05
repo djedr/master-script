@@ -1,0 +1,197 @@
+do[
+	define[
+		iff
+		mac[a
+			mac[b
+				mac[c
+					code\if[{a} {b} {c}]
+				]
+			]
+		]
+	]
+	iff[false]
+		[number\32]
+	\iff[false]
+		[number\33]
+		[number\34]
+]
+
+sth is duplicated between evaluate and substitute
+or parent is fucked up somewhere
+keep track of parent
+
+implement tree copying
+splice copy
+
+
+
+(def)[def (mac)[a (mac)[b {(def)[{a b}]}]]]
+def[mac]\(mac)[{args} (mac)[b {(mac)[{args b}]}]]
+def[infix]\mac[a op {b}]\{{op}[{a b}]}
+
+def[if]\mac[a {opt}]\mac[then]\mac[else][
+	def[list[op b]]\opt -- def[$[op b]]\opt
+	{(if)[{(if)[is-defined\op infix[a op b] a] then else}]}
+]
+
+-- alternative definition:
+def[if]\mac[a {opt}]\mac[then]\mac[else][
+	{(if)[{(if)[is-defined\opt\0 infix[a opt\0 opt\1] a] then else}]}
+]
+
+--
+-- different native constructs names:
+--
+define[def macro[a macro[b code'\define[{a b}]]]]
+def[mac]\macro[{args} macro[b code'\macro[{args b}]]] -- args should be flattened
+def[def$]\mac[{args}]\mac[b]\code'\def[list\{args}]\{b}
+
+def[set]\mac[a op b]\code'\mutate*[{a} {op}[{a b}]]
+def[<-]\mac[a b]\code'\{b}
+
+def[num]\mac[a {opt}]
+	\if[opt\0 is-defined][
+		code'\{opt\0}[{number\a number\opt\1}]
+	]\code'\number\a
+	
+-- alternative
+def[num]\mac[a {opt}][
+	def$[op b]\opt
+	if[op is-defined][
+		code'\{op}[{number\a number\b}]
+	]\code'\number\a
+]
+
+
+def[infix]\mac[a op {b}]\code'\{op}[{a b}]
+
+
+def[if]\mac[a {opt}]\mac[then]\mac[else]
+	\code'\do-if[{do-if[is-defined\opt\0 opt\0[a opt\1] a] then else}]
+
+def[a]\num\3
+set[a <- num\2]
+
+-- negative index means from the end
+-- lst\-5
+-- lst\-0 -- last element? 
+
+***
+evaluate meta:
+	var values = [];
+	
+	// put evaluated meta's args into values
+	// if arg is array, flatten it
+	// flatten values onto parent's arguments
+	// so kinda exactly how substitute does it
+
+code'\{op}[{args}]
+code'\{op[args]}
+
+evaluating meta in code':
+	if arg is word then eval
+	if it's apply:
+		eval op, splice op
+		
+	or, alternatively, if the result of meta is in op position, splice it there
+	
+	if operator.operator.type = meta -- {op}[{args}]
+		eval op;
+			if it's a syntax node, set the result as new operator
+			
+		if parent.args[branchId].type = apply
+			
+	
+	if arg.type = apply -- {op[sth]}
+		eval arg's op;
+			if it's a syntax node, set the result as apply's operator
+			else eval the apply normally and 
+		splice the apply into parent's args
+	if arg.type = word -- {arg}
+		eval arg
+		splice into parent's args
+	if isArray(arg) -- {arg} -- arg is rest
+	
+who is operator's parent?
+
+in evaluate:
+	add support for meta
+		with a case (1) when parent.args[branchId].type = apply -- {op}[{args}]
+		case arg is array
+			flatten array, evaluate each element
+		normal case -- arg is word:
+			eval arg
+			splice resulting syntax node (not necessarily) into parent's args
+	add case (2) for applying a syntax node -- {op[sth]}
+	
+	both of the above cases (1, 2) do the same
+		set the result (the syntax node) as apply's operator
+	
+	add case for applying a list
+
+before using (evaluating, passing to an op) arguments, evaluate meta (expand)
+	is expansion permanent or not?
+	it shouldn't be
+	
+only macro expansion is permanent
+maybe constant substitution too
+
+if (expression.operator.type === "meta") {
+            // TODO: implement this like described in the text file and like substitute() does it
+            for (i = 0; i < expression.args; ++i) {
+                if (expression.args[i].type === "apply" && expression.args[i].operator.type === "meta") {
+                    evaluate(expression.args[i], environment, i);
+                }
+            }
+
+            var metaArgs = expression.args.map((arg, i) => {
+                return evaluate(arg, environment, i);
+            });
+
+            if (expression.parent.args[branchId].type === "apply") {
+                // handle {op}[args]
+                // what about {a b c op}[args]?
+                // should the last arg assume the role of op?
+                // should this only work for a single argument?
+                // for now error:
+                throw new TypeError("Can't use meta as operator! As in {op}[args].");
+            } else {
+                var newArgs = [];
+
+                // rewrite already evaluated args
+                for (var i = 0; i < branchId; ++i) {
+                    var arg = expression.parent.args[i];
+                    newArgs.push(arg);
+                }
+
+                // splice my args, flattening arrays
+                for (i = branchId; i < metaArgs.length + branchId; ++i) {
+                    arg = metaArgs[i];
+                    if (Array.isArray(arg)) {
+                        //newArgs = newArgs.concat(arg);
+                        for (var j = 0; j < arg.length; ++j) {
+                            newArgs.push(arg[j]);
+                        }
+                    } else {
+                        newArgs.push(arg);
+                    }
+                }
+
+                // rewrite non-evaluated args
+                for (i = branchId + 1; i < expression.parent.args.length; ++i) {
+                    var arg = expression.parent.args[i];
+                    newArgs.push(arg);
+                }
+
+                return newArgs; // now this should be used instead of the original args upon invocation
+            }
+        }
+
+def[if]\mac[{condition 1 3}]\mac[{then 1}]\mac[else[{else}]]
+	\code'
+		\if*[{if*[is-defined[condition\1] condition\1[condition\0 condition\2] condition\0]}
+			{if*[is-defined[then\1] code'\do[{then}] code'\{then}]}
+			{if*[is-defined[else] if*[is-defined[else\1] code'\do[{else}] code'\{else}] code'|]}
+		]
+		
+-- code should do substitute

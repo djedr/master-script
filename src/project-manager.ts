@@ -10,8 +10,8 @@ var bindings = {
     },
     "selected": {
         "event-handlers": {
-            "dblclick": function() {
-                var obj = { selected: bindings["selected"].node.value };
+            "dblclick": function(event) {
+                var obj = { selected: event.target.value };
                 websocket.send(JSON.stringify(obj));
             },
             "change": function() {
@@ -80,6 +80,10 @@ addEventListener('message', function (event) {
 });
 addEventListener('storage', function(event) {
     console.log('storage', event);
+
+    if (event.key === "pathToRead") {
+        websocket.send(JSON.stringify({ pathToRead: event.newValue }));
+    }
 });
 
 //
@@ -94,9 +98,15 @@ websocket.onopen = function(event) {
 
 websocket.onmessage = function(event) {
     var msg = event.data;
+    var obj;
 
     if (msg[0] === '{') {
-        updateBindings(bindings, JSON.parse(msg));
+        obj = JSON.parse(msg);
+        updateBindings(bindings, obj);
+
+        if (obj["fileContents"]) {
+            console.log(obj["fileContents"]);
+        }
     }
     console.log('websocket message', event.data);
 };

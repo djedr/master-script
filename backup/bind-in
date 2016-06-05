@@ -1,0 +1,246 @@
+bind-in -> extend
+set-in -> modify
+
+for lists:
+	
+visual representation that is nearly identical to textual, but not editable like text
+
+debug construct that wraps an expression and returns its value,
+but also unparses and logs it and optionally invokes debugger if some parameters are passed
+
+-- macro:
+debug[params]|exp
+
+should . work like bind?
+.[property object]
+instead
+.[object property]
+
+.[push lst]
+
+.[.[game-window document get-element-by-id]['|info] style]
+.[style .[get-element-by-id document game-window]|'|info]
+
+bind* [args-list|display list|'[none] .[style .[get-element-by-id document game-window]|'|info]]
+bind* [args-list|display list|'[none] .[.[game-window document get-element-by-id]['|info] style]]
+
+
+bind[display]['|none]|.[style .[get-element-by-id document game-window]|'|info]
+
+bind['|none][display]|.[style .[get-element-by-id document game-window]|'|info]
+
+bind['|none][display]|.[style match['|info]|.[get-element-by-id document game-window]]
+
+bind['|none][display]|.[style with['|info]|.[get-element-by-id document game-window]]
+
+bind['|none][display]|.[style ^['|info]|.[get-element-by-id document game-window]]
+
+
+alter
+[.[.[game-window document get-element-by-id]['|info] style]]
+[display]
+['|none]
+
+alter
+[.[.[game-window document get-element-by-id]|'|info style]]
+[display]
+['|none]
+
+game-window.document.get-element-by-id("info").style.display = "none";
+
+,[
+	,[game-window]
+	| ,[document]
+	| ,[get-element-by-id]
+	!
+	|'|info
+]
+| style
+!
+
+bind [info-element]|.[game-window document get-element-by-id]['|info]
+
+alter [.[info-element style]][display]['|none]
+
+
+alter [;[info-element]|style][display]['|none]
+
+alter-directly [.[info-element style display]]['|none]
+
+alter-directly* [.[info-element style display] '|none]
+
+alter-directly.* [info-element style display '|none]
+
+-- the simplest
+.set [info-element style display '|none]
+
+infoElement.style.display = "none";
+
+,[info-element style display '|none]
+
+
+.get[info-element style display]
+.set[info-element style display '|none]
+
+.[info-element style display]
+:[info-element style display '|none]
+
+
+bindNames can't have only names that are already defined in the topmost environment
+
+
+--bind [
+--	restart-key-code
+--	download-key-code
+--	space-key-code
+--	z-key-code
+--	x-key-code
+--] [
+--	113
+--	115
+--	32
+--	90
+--	88
+--]
+
+--bind!
+--[restart-key-code][113]
+--[download-key-code][115]
+--[space-key-code][32]
+--[z-key-code][90]
+--[x-key-code][88]
+
+list[a b c d]
+dict[prop[a 1 prop[b 2 null]]]
+list[node[1 node[2 node[3 null]]]]
+
+dict
+| at [a][1]
+| at [b][2]
+| at [c][3]
+!
+
+dict | at[a][1] | at[b][2] | at[c][3] !
+
+link
+| cons [1]
+| cons [2]
+| cons [3]
+!
+
+at [a][1]
+| at [b][2]
+| at [c][3]
+!
+
+to [1]
+| to [2]
+| to [3]
+!
+
+bind [my-list-123]
+| to [1]
+| to [2]
+| to [3]
+!
+
+bind [my-dict-abc]
+| at [a] [1]
+| at [b] [2]
+| at [c] [3]
+!
+
+bind!
+| at  [restart-key-code] [113]
+| at [download-key-code] [115]
+| at    [space-key-code] [32]
+| at        [z-key-code] [90]
+| at        [x-key-code] [88]
+!
+
+
+bind
+
+extend!
+| at  [restart-key-code] [113]
+| at [download-key-code] [115]
+| at    [space-key-code] [32]
+| at        [z-key-code] [90]
+| at        [x-key-code] [88]
+!
+
+modify [game-state pillman]
+| at [planet][new-planet]
+| at  [angle][+[.[game-state pillman angle] .[window Math PI]]]
+!
+
+at returns an object with attributes 
+
+at: -- merge objects into one
+	ret = {} // Object.create({});
+	args[0] -- args-list -- names of attributes
+	args[1] -- list -- values that will be bound to these
+	args[2] -- an object that will have its own properties appended into ret or null
+	
+	ret = localEnv extended by args[2] evaluated
+	
+	ret = Object.assign(localEnv, evaluate(args[2], env, 2));
+
+extend [game-state pillman]
+| at [some-new-attribute][some-value]
+!
+
+or linked object
+
+struct {
+	name
+	value
+	next
+}
+
+{ a: "aa", b: "bb", c: "cc" }
+
+[v] { name: "a", value: "aa", next: { name: "b", value: "bb", next: { name: "c", value: "cc", next: null } } }
+[x] ["a", "aa", ["b", "bb", ["c", "cc", null]]]
+
+
+{ "n": "a", "h": "aa", "t": {}} -- linked object
+{ "h": "a", "t": {}} -- linked list
+
+implicit import: paste with parser or really read file and evaluate into environment
+
+module [prelude] [
+	...
+] -> returns environment
+
+a file contents are wrapped in this:
+module [
+
+] -> returns env or only the things in env that have been exported
+
+evaluateWithPrelude(parsedProgram) {
+	var preludeFileContents = loadFile("./prelude.dual");
+	var parsedPrelude = parse(preludeFileContents);
+	var preludeEnv = evaluate(parsedPrelude, topEnv, 0); // so either prelude should return its env at the end or evaluate should return environment instead of value?
+	
+	return evaluate(parsedProgram, preludeEnv, 0);
+}
+
+bind [module-name] [import ['[./path/to/file]]] -- imports into a variable
+
+extend-self [import ['[path]]] -- imports into this scope
+
+-- selective import?
+-- only evaluate specified definitions
+
+import ['[path]][a b c d]
+
+import [a b c d] ['[path]]
+
+load file in manager.html (get text contents)
+send to 
+
+could communicate with the server through a websocket
+actually all communication could be that way
+
+no reloading needed or nothing

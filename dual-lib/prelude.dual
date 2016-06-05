@@ -1,0 +1,7 @@
+--
+-- basic functional operators: implicit import
+--    
+bind [fold-right]
+| of [fn initial list[head {tail}]] [fn[head fold-right[fn initial tail]]]
+| of [fn initial _] [initial] -- | of [fn initial list!] [initial]
+!

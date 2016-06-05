@@ -1,0 +1,24 @@
+ >>>>>>>>>>>>>>>>>>>+
+<A|any||S|sequence| v Evaluates arguments in order. Returns the value of the last.
+ <<<<<+-----------+ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ^|	     0|#|any|A<<A|any   ||D|define| v Defines a new variable.
+ 	  ^|    First   +<<<<<<<<<<<<<<<+---------+ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ^|  step in   v               ^|    name|N|symbol|S<<S|symbol||F|five v This contains the number 5.
+ 	  ^| 	  the   v	            ^<<<<<<<<<+ +<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ^| sequence   v                         ^ v
+ 	  ^| 		    v               +>>>>>>>>>+ +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ^| 		    v	 		    ^|   value|V|any   |A<<#|number||#|5    v
+ 	  ^| 		    v			    +<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ^|            v              
+ 	  ^|            v              
+ 	  ^| 		    v               
+ 	  ^| 		    +>>>>>>>>>>>>>>>>>>>>>>>>>>>+
+ 	  ^| 	     1|#|any|A<<#|number||F|five    v Evaluate the variable 'five'.
+      ^|   Second   +<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  ^|     step   v
+ 	  ^|            +>>>>>>>>>>>>>>>>>>>>>>>>>>>+		
+ 	  ^| 	     2|#|any|A<<#|number||#|42      v Return the meaning of it all.
+ 	  ^|   Third.   v<<<<<<<<<<<<<<<<<<<<<<<<<<<+
+ 	  +<<<<<<<<<<<<<+
+ 	  ||    [+]    ||
+ 	  |+===========+|

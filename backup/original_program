@@ -1,0 +1,17 @@
+define[
+	five
+	number\5
+]
+define[
+	some-variable
+	conditional[
+		>[five 3]
+		number\3
+		number\4
+	]
+]
+$[Edit the source to update the visualisation -- it will be updated as you type.]
+$[hello world]
+$[note: the > operator is not implemented yet, so the condition is dummy]
+$[there are true and false values though, so you can make the condition false by replacing >[five 3] by false]
+some-variable

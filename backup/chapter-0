@@ -1,0 +1,14 @@
+Hackers and computer scientists often like to call the first chapter of a publication "Chapter 0", especially if it is of an introductory nature. One of the classic instances was in the First Edition of K&R. In recent years this trait has also been observed among many pure mathematicians, where many constructions are defined to be numbered from 0.
+
+lst\1st -> lst\0 -> lst[0]
+
+def[o]\1st
+
+lst\ord\o
+
+ord converts ordinal to number (subtracts one)
+
+1st -> 0
+2nd -> 1
+3rd -> 2
+4th -> 3

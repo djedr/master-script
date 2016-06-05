@@ -1,0 +1,75 @@
+				<tr class="argument">
+					<td class="argument-pin">
+						<div class="argument-pin-number"><div class="icon number-icon">#</div> 1</div>
+						
+						<div class="description-wrapper">
+							<div class="description">
+								Second argument in the sequence.
+								....
+								....
+								....
+								....
+							</div>
+						</div>
+					</td>
+					<tr class="input-connection">
+						<td class="connection-name">
+							<span>any</span>
+							<div class="icon any-icon">a</div>
+						</td>
+					</tr>
+					<tr class="output-connection">
+						<td class="connection-name"><div class="icon number-icon">n</div> number</td>
+					</tr>
+					<table class="call">
+						<tr class="operator-pin">
+							<td class="operator-pin-name">
+								five <div class="icon five-icon">f</div>
+							</td>
+						</tr>
+						<tr class="argument">
+							<td class="argument-pin last"></td>
+						</tr>
+					</table>
+				</tr>
+				<tr class="argument">
+					<td class="argument-pin">
+						<div class="argument-pin-number"><div class="icon number-icon">#</div> 2</div>
+						
+						<div class="description-wrapper">
+							<div class="description">
+								Third argument in the sequence.
+							</div>
+						</div>
+					</td>
+					<td class="input-connection">
+						<div class="connection-name">
+							<span>any</span>
+							<div class="icon any-icon">a</div>
+						</div>
+					</td>
+					<td class="output-connection">
+						<div class="connection-name"><div class="icon number-icon">n</div> number</div>
+					</td>
+					<table class="call">
+						<tr class="operator-pin">
+							<td class="operator-pin-name">
+								42 <div class="icon number-icon">#</div>
+							</td>
+						</tr>
+						<tr class="argument">
+							<td class="argument-pin last"></td>
+						</tr>
+					</table>
+				</tr>
+				<tr class="argument">
+					<td class="argument-pin last">
+						<div class="argument-pin-button">+</div>
+						
+						<div class="description-wrapper">
+							<div class="description">
+								Click to add another argument to the sequence.
+							</div>
+						</div>
+					</td>
+				</tr>

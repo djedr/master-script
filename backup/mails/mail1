@@ -1,0 +1,30 @@
+Dzień dobry,
+przepraszam, że nie osobiście, ale nie zastałem Pana na godzinach przyjęć 23.02. Chciałbym zapytać czy zaopiekowałby się Pan moją pracą dyplomową?
+
+Proponowany przeze mnie temat (roboczy) to:
+"Application of modern web technologies and principles of functional, reactive and asynchronous programming in implementing a visual scripting language for use in computer game development".
+
+W zasadzie jest to coś podobnego, co chciałem zrobić w ramach pracy dyplomowej inżynierskiej, o czym dyskutowałem wtedy z Panem, z tym, że teraz mam ściśle zdefiniowane technologie i cel, trochę doświadczenia komercyjnego oraz stworzyłem już wczesny prototyp.
+
+Tutaj znajduje się moja prezentacja z seminarium dyplomowego z (za chwilę) poprzedniego semestru:
+https://docs.google.com/presentation/d/1v-ehnxzWSwk0kVMwuL0SZC24t0-55gRP4iLOaU1N-6I/edit?pref=2&pli=1#slide=id.g3368d63d1_021
+
+Mam już częściowo zaprojektowany język, zaimplementowany prosty parser i interpreter i mini-prototyp edytora.
+
+W ramach pracy zamierzam zbudować aplikację internetową, która będzie edytorem pozwalającym na tworzenie aplikacji za pomocą stworzonego języka. Jednocześnie, przy tworzeniu tej aplikacji chcę zbadać wykorzystanie najnowszych/eksperymentalnych technologii internetowych:
+* HTML5 i CSS3-4
+* TypeScript 1.8 -- język oparty na EcmaScript 2015, dodający opcjonalne statyczne typowanie, kompilowany do i będący nadzbiorem JavaScriptu / http://www.typescriptlang.org/
+* RxJS 5 -- biblioteka do programowania reaktywnego dla JavaScriptu / https://github.com/ReactiveX/RxJS
+* Framework do tworzenia aplikacji internetowych:
+	* Cycle.js -- wykorzystujący bibliotekę RxJS i programowanie funkcyjne / http://cycle.js.org
+	* lub Angular 2 -- nowa wersja popularnego frameworka Google wykorzystująca m.in. TypeScript i RxJS / https://angular.io/
+
+Po stworzeniu prototypu edytora zaimplementuję w nim prostą grę komputerową (typu Tetris/Pacman) i opiszę mechanizmy języka i proces tworzenia aplikacji.
+
+Na koniec porównam stworzone przez siebie rozwiązanie z innymi dostępnymi -- co najmniej z systemem Blueprints Visual Scripting [ https://docs.unrealengine.com/latest/INT/Engine/Blueprints/index.html ], a być może jeszcze z językiem Luna [ http://www.luna-lang.org/ ], który nie został jeszcze upubliczniony, a o którym dowiedziałem się wczoraj [ https://www.reddit.com/r/programming/comments/46w702/luna_hybridvisual_textual_functional_programming/ ]. Język jest reklamowany jako "world’s first programming language featuring two exchangeable representations: textual and visual, which you can freely switch at any time", co jest najważniejszą cechą również mojego języka. Istnieją jednak pewne różnice, z których jedną działającą zdecydowanie na korzyść mojego rozwiązania jest oparcie go na platformie webowej.
+
+Jeżeli wyrazi Pan zgodę, dodam Pana na GitHubie do repozytorium (póki co prywatnego), które zawiera wczesny prototyp: https://github.com/djedr/master-script
+
+-- 
+Pozdrawiam,
+Dariusz Jędrzejczak

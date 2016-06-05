@@ -1,0 +1,281 @@
+if![a < 2][
+	ax
+	bx
+	cx
+][else][
+	dx
+	ex
+	fx
+]
+
+def[
+	if! macro[v1 op v2
+		macro[args1
+			macro[v3 op2 v4
+				macro[args2
+					node[
+						if[?[op[v1 v2]]
+							do[args1]
+							?[op2[v3 v4]]
+							do[args2]
+						]
+					]
+				]
+			]
+		]
+	]
+]
+
+def![if!][
+	macro![v1 op1 v2][
+		macro![args1][
+			macro![v3 op2 v4][
+				macro[args2][
+					node[
+						...
+					]
+				]
+			]
+		]
+	]
+]
+	
+zero-arg invocation: |
+one-arg invocation: \
+
+def![if!]\
+	macro![v1 op1 v2]\
+		macro![...\args1]\
+			macro![v3 op2 v4]\
+				macro![...\args2]\
+					node\
+						if[?[op1[v1 v2]]
+							do[...\args1]
+							if[?[op2[v3 v4]]
+								do[...\args2]
+							]
+						]
+
+
+native constructs:
+if!
+
+macros:
+if
+
+
+def[if]\
+	macro-e[a op b]\
+		macro-e[...\seq]\
+			macro@[
+					if
+					node\
+						if![?[op[a b]] do[...\seq]]
+				]
+
+if[x < z][
+	do-this|
+	do-that|
+	do-something|
+]| --[the bar | can be auto-added on macroexpansion]
+
+
+macroexpansion phase:
+	if node.type === 'macro-word'
+		replace node with macro.node value
+	else (if node.type === 'macro-apply')
+		if node.op.type === mapply
+			invoke op
+		else
+			invoke macro.macro
+	invoke a macro
+		it returns a pair: @[macro, node]
+	if the returned value 
+
+mapply
+	op:
+		mapply
+			op:
+				if
+			args:
+				x < z
+	args:
+		do-this do-that do-something
+
+dual macro:
+	
+dual value:
+	if invoked returns whatever its op part returns
+	if evaluated returns its value part
+
+def[if]\
+	macro-dual[
+		macro-fun[a op b]\
+			macro-dual[
+				macro-fun[...\seq]\
+					macro-dual[
+						if
+						node\
+							if![?[op[a b]] do[...\seq]]
+					]
+				node[0]
+			]
+		node[0]
+	]
+	
+	
+if after evaluation you get a macro-dual value then its node component is the result node that will be spliced into ast
+
+macro-dual value can be evaluated:
+	it passes all arguments to its first component (a macro-function) and returns its result
+
+def[if]\
+	macro-fun[a op b]\
+		macro-fun[...\seq]\
+			macro-dual[
+				if
+				node\
+					if![?[op[a b]] do[...\seq]]
+			]
+			
+macroEvaluate
+	modifies AST (usually before execution)
+	
+separate macroenvironment
+
+
+macro\def[if]\
+	fun[a op b]\
+		fun[...\seq]\
+			dual[
+				if
+				node\
+					if![?[op[a b]] do[...\seq]]
+			]
+
+macroexpansion time:
+	setup:
+		evaluate/define/compute only things within macro[] nodes
+	work:
+		substitute macros into ast
+	result:
+		new ast; to be used by a newly created dual program
+
+if node.name === 'macro'
+	evaluate args -> they are in the environment now
+	
+if macroEnvironment[node.name] -> run node within environment
+	use return value to modify ast
+
+define:
+	node[...] -- returns ast node
+
+def[dual]\
+	fun[m n]\
+		fun[...\args]\
+			if[length\args = 0]
+				[n]
+			[else]
+				[m[...\args]]
+				
+def[dual][
+	fun[m n][
+		fun[...[args]][
+			if[length[args] = 0]
+				[n]
+			[else]
+				[m[...[args]]]
+		]
+	]
+]
+
+def(dual) {
+	fun(m n) {
+		fun(...(args)) {
+			if(length(args) = 0) {
+				n
+			} (else) {
+				m(...(args))
+			}
+		}
+	}
+}
+
+def[dual]|
+	fun[m n]|
+		fun[...|args]|
+			if[length|args = 0]
+				[n]
+			[else]
+				[m[...|args]]
+				
+
+def[dual]
+	| fun[m n]
+		| fun[...|args]
+			| if[length|args = 0]
+				[n]
+			[else]
+				[m[...|args]]
+				
+
+def[dual]
+	|fun[m n]
+		|fun[...|args]
+			|if[length|args = 0]
+				[n]
+			[else]
+				[m[...|args]]
+
+def[dual]
+	|fun[m n]
+		|fun[...|args]
+			|if[length|args = 0][
+				n
+			]
+			|else[
+				m[...|args]
+			]
+
+if[...][
+
+]|if[...][
+
+]|else[
+
+]
+
+if[...][
+
+][
+	if[...][
+
+	][
+		else[
+
+		]
+	]
+]
+
+
+macro\def[if]\
+	fun[a op b]\
+		fun[...\then-branch]\
+			fun[...\else-branch]\
+				node\
+					if![
+						?[op[a b]]
+						do[...\then-branch]
+						do[...\else-branch]
+					]
+
+macro|def[if]
+	|fun[a op b]
+		|fun[...|then-branch]
+			|fun[...|else-branch]
+				|node
+					|if![
+						?[op[a b]]
+						do[...|then-branch]
+						do[...|else-branch]
+					]

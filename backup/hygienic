@@ -1,0 +1,63 @@
+var a = 1;
+var b = 3;
+
+[a, b] = [b, a];
+console.log(a); // 3
+console.log(b); // 1
+
+tempEnv for bindNames
+
+bug:
+ args:
+	0: obj
+	1: undefined
+	2: obj
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+def [fib]
+\ fun  [=\0] [0]
+\ fun [<=\2] [1]
+\ fun    [n] [+[fib\-[n 1] fib\-[n 2]]]
+|
+
+def [fib]
+| fun  [=|0] [0]
+| fun [<=|2] [1]
+| fun    [n] [+[fib|-[n 1] fib|-[n 2]]]
+||
+
+def [fib]
+| fun       [0] [0]
+| fun [or[1 2]] [1]
+| fun       [n] [+[fib|-[n 1] fib|-[n 2]]]
+||
+
+0 1 1 2 3 5 8 13 21
+
+function fib(n) {
+	if (n === 0) {
+		return 0;
+	} else if (n <= 2) {
+		return 1;
+	} else {
+		return fib(n - 1) + fib(n - 2);
+	}
+}
+
+hygienic macros
+
+the mistaken part
+

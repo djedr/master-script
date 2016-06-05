@@ -1,0 +1,93 @@
+if (expr.operator.type === "word") { // deconstruct
+	parameter = parameters[j];
+	
+	if (parameter.operator) {
+		env[expr.operator.name] = parameter.operator;
+		
+		if (parameter.operator.name && parameter.operator.name === expr.operator.name) {
+			bindToNames(parameter.args, expr.args, env)
+		} else {
+			throw new TypeError("Can't match code!");
+		}
+	}
+} else if (expr.operator.type === "meta") { // construct/rest
+	j = restParameters(expr, env, values, j);
+} else {
+	throw new TypeError("Deconstruct operator should be a word as in 'list[a b c]'");
+}
+break;
+
+***
+
+rest requires at least one arg atm; change that?
+
+sort out parent and code' issues
+
+currying would be superb
+partial application
+pattern matching
+
+function*[list[args body] list[args2 body2]]
+different body depending on args pattern
+
+def[num]\mac
+	[n][code'\number\{n}]
+	[a op b][code'\{op}[number\{a} number\{b}]]
+
+	\if[is-defined\args\1][
+        code'\{args\1}[number\{args\0} number\{args\2}]
+    ]\code'\number\{args\0}
+
+fun[a b c body]
+	simple case
+
+fun[list[a b c body1] list[d e f body2]]
+	complicated case
+	
+	upon invocation the function matches args
+	first matching set causes the corresponding body to get evaluated
+	
+bindNames:
+	tempEnvironment for matching
+		if matches copy it onto target
+	if doesn't match/too few args/too many
+		try match another set
+	if none matches
+		error
+		
+def[mac]\macro*[{args} macro*[body
+	do[
+		def[lst]\list[list[{args} body]]
+		def[aux]\macro*[{args2} macro*[body2
+			do[
+				set[lst concat list[{args2} body2]]
+				list[aux code'\macro*[{lst}]] -- todo: lst should expand to evaluated macro args here
+			]
+		]]
+		list[aux code'\macro*[{args body}]]
+	]
+]]
+
+indices starting at 1?
+
+gensym
+	generate unique symbol
+	
+&[buttons orient][$[a b c d] &[pitch roll][#\22 #\37.7]]
+bond[buttons orient][list[a b c d] bond[pitch roll][number[22] number[37.7]]]
+bond[buttons orient][list[a b c d] bond[pitch roll][number\22 number\37.7]]
+bond[buttons orient][list[a b c d] bond[pitch roll][#\22 #\37.7]]
+
+bond[
+	buttons
+	orient
+][
+	list[a b c d]
+	bond[
+		pitch
+		roll
+	][
+		number\22
+		number\37.7
+	]
+]

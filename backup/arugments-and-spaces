@@ -1,0 +1,409 @@
+set[0 1 2 3 4 5 6 value]
+\'' last argument is value to set to all preceding arguments
+set-each[0 1 2 3 4 5 6 @[0 1 2 3 4 5 6]]
+\'' last argument is an array of values to set to each preceding arguments appropriately
+
+\'$[comment comment comment]
+
+declare[0 1 2 3 4 5 6]
+define[0 1 2 3 4 5 6 value]
+define-each[0 1 2 3 4 5 6 @[0 1 2 3 4 5 6]]
+
+significant space language:
+    look at previous node's prefix (simple -- one node per line?)
+    look at first node in last line's prefix; stack operator nodes (sophisticated -- > 1 node per line)
+
+define
+    hello
+    $ hello
+
+define hello $[hello]
+
+define hello $  hello
+
+define  hello $ hello
+define  hello  other  yet-another  $ hello
+
+define   hello   other   yet-another   $ hello
+
+if >[a 5]
+    true
+    false
+
+if
+    >
+        a
+        5
+    true
+    false
+
+if >[a 5]
+    true
+    if >[a -5]
+        bing
+        bong
+
+>[a b] -- if a > b returns first nonzero argument as boolean; else boolean[0]
+
+if prefix[0] === '\n'
+    if prefix.length > stack.top.prefix.length 
+        stack.top.args.push current-node
+    else if prefix.length < stack.top.prefix.length
+        stack.pop
+    stack.push current-node
+
+if =[at[prefix 0] endl[]]
+
+if
+    is-at 0 prefix = endl
+    if
+        is-length prefix > .[stack top prefix length]
+            .![stack top args push current-node]
+            if
+                is .[prefix length] < .[stack top prefix length]
+                    .![stack pop]
+            .![stack push current-node]
+
+define is-at
+    fun index array compare value
+        js
+            function(index, array, compare, value) {
+                return compare(array[index], value);
+            }
+
+if-at 0 prefix = endl
+    if-length prefix > .[stack top prefix length] do:
+        .!1[stack top args push current-node]
+        if-is .[prefix length] < .[stack top prefix length]
+            .![stack pop]
+        .!1[stack push current-node]
+        
+
+define if-is
+    fun value1 compare value2, then-branch, else-branch)
+        js
+            function(value1, compare, value2, then_branch, else_branch) {
+                if (compare(value1, value2)) {
+                    return then_branch();
+                }
+                else_branch();
+            }
+
+
+
+define is-at
+    fun index array compare value
+        compare at[index array] value
+
+define if-at
+    fun index array compare value then else
+        if is-at[index array compare value] then else
+
+define if-is
+    fun value1 compare value2 then else
+        if compare[value1 value2] then else
+
+
+if is-at[0 prefix = endl]
+    if is-length[prefix > .[stack top prefix length]]
+        do
+            .!1[stack top args push current-node]
+            if is[.[prefix length] < .[stack top prefix length]]
+                .![stack pop]
+            .!1[stack push current-node]
+
+
+\space-sensitive-on
+if is-at[0 prefix = endl]
+    if is-length[prefix > .[stack top prefix length]]\:
+        .!1 stack top args push current-node
+        if is[.[prefix length] < .[stack top prefix length]]
+            .! stack pop
+        .!1 stack push current-node
+
+\: -- makes next argument to current operator be sequence and makes the sequence the current operator
+
+
+if[is-at[0 prefix = endl]
+    if[is-length[prefix > .[stack top prefix length]] sequence[
+        .!1[stack top args push current-node]
+        if[is[.[prefix length] < .[stack top prefix length]]
+            .![stack pop]
+        ]
+        .!1[stack push current-node]
+    ]]
+]
+
+\'' generalized is-length:
+define[is. fun[object property compare value do[
+    compare[.[object property] value]
+]]]
+
+autoclose parentheses when indent decreased?
+
+parser-level goodies
+or editor-level
+
+first word in line is op of apply expression that ends with a line that has lesser or equal level of indentation than the current line
+syntax coloring reflects that
+\n\s+[^\s\[\]]+
+line-mode regex:
+    ^\s+[^\s\[\]]+
+returns
+    'apply-first-in-line'
+
+editor could suggest not placing [ after first word in line
+    or even prevent/remove it
+    unless the value returned by the apply expr is supposed to be the operator
+
+
+define is.
+    fun object property compare value\:
+        compare .[object property] value
+
+
+[define is.[
+    fun object property compare value [sequence[
+        compare [. object property] value
+    ]]
+]]
+
+if is-at[0 at[prefix expr] = endl]\:
+    define apply object[0]
+    define current-expr pop[expr-stack]
+    set-at operator apply expr
+    if is[length-at[prefix expr] > length-at[prefix current-expr]]
+        push apply at[args current-expr]
+        while is[length-at[prefix expr] < length-at[prefix current-expr]\:
+            set current-expr pop[expr-stack]
+    push[current-expr expr-stack]
+
+
+if is-at[0 at[prefix expr] = endl]
+    define apply object[0]
+    define current-expr pop[expr-stack]
+    set-at operator apply expr
+    if is[length-at[prefix expr] > length-at[prefix current-expr]]
+        push apply at[args current-expr]
+    \else:
+        while is[length-at[prefix expr] < length-at[prefix current-expr]\:
+            set current-expr pop[expr-stack]
+    push[current-expr expr-stack]
+
+if there's more than one indented line, they are wrapped into a sequence and the sequence becomes the next argument to the current op
+another argument to the current op can be inserted with \<label>:
+or just an empty line
+
+op a
+    b
+\2:
+    c
+\3:
+    d
+
+op a
+    b
+\2: c
+\3: d
+
+    op a
+        b
+        \2: c
+        \3: d
+
+
+    op a
+        b
+    \2: c
+    \3: d
+
+fun
+    x
+    \: y
+    \: +[x y]
+
+fun
+    x
+\:
+    y
+\:
+    +[x y]
+
+
+if is-at[0 at[prefix expr] = endl]
+    define apply object[property[operator object[0]]
+    define current-expr pop[expr-stack]
+    set-at operator apply expr
+    if is[length-at[prefix expr] > length-at[prefix current-expr]]
+        push apply at[args current-expr]
+        
+        while is[length-at[prefix expr] < length-at[prefix current-expr]\:
+            set current-expr pop[expr-stack]
+    push[current-expr expr-stack]
+
+!@#$&
+
+^[&[operator ^[0]]]
+{}[:[operator {}[]]]
+
+|[:[operator |[]]]
+
+
+define factorial
+    fun n
+        if is[n <= 1] 1
+        * n factorial[-1[n]]
+
+def factorial
+    fun n
+        if is[n <= 1]
+            #[1]
+            
+            # n * !#[factorial n - 1]
+
+function factorial(n) {
+    if (n <= 1)
+        return 1;
+    return n * factorial(n - 1);
+}
+
+
+var factorial = function(n) {
+    if (n <= 1)
+        return 1;
+    return n * factorial(n - 1);
+}
+
+
+def factorial
+    fun n
+        if is[n <= 1] #[1] #[n * !#[factorial n - 1]]
+    
+def factorial
+    fun n
+        if is[n <= 1]
+            # 1
+            # n * !#[factorial n - 1]
+
+def[factorial fun[n
+    if[?[n <= 1] #[1] !#[factorial n - 1]]
+]]
+
+def factorial fun[n \;
+    if ?[n <= 1] #[1] #[n * !#[factorial n - 1]]
+]
+
+def factorial
+    fun n
+        if ?[n <= 1] #[1] #[n * factorial(n - 1)]
+
+
+
+unsigned int fib(unsigned int n) {
+    if(n == 0) return 0;
+    if(n == 1) return 1;
+    return fib(n-1)+fib(n-2);
+}
+
+def fibonacci
+    fun n
+        if ?[n = 0]
+            # 0
+
+            if ?[n = 1]
+                # 1 
+
+                # fibonacci(n - 1) + fibonacci(n - 2)
+
+
+def fibonacci
+    fun n
+        cond
+            @ ?[n = 0] #[0]
+            @ ?[n = 1] #[1]
+            @ ?[1] #[fibonacci(n - 1) + fibonacci(n - 2)]
+
+def[fibonacci
+    fun[n
+        cond[
+            @[?[n = 0] #[0]]
+            @[?[n = 1] #[1]]
+            @[?[1] #[fibonacci(n - 1) + fibonacci(n - 2)]]
+        ]
+    ]
+]
+
+if no arguments on the same line as op, each new line is an argument
+    what does an empty line mean then?
+        perhaps that the next lines behave as usual
+
+
+if is-at[0 at[prefix expr] = endl]
+    
+    define apply object[property[operator object[0]]
+    define current-expr pop[expr-stack]
+    set-at operator apply expr
+    
+    if is[length-at[prefix expr] > length-at[prefix current-expr]]
+        push apply at[args current-expr]
+        while is[length-at[prefix expr] < length-at[prefix current-expr]
+            set current-expr pop[expr-stack]
+    push[current-expr expr-stack]
+
+empty line opens new sequence?
+
+
+
+def factorial
+    fun n
+        if ?[n <= 1]
+            # 1
+            # n * factorial(n - 1)
+
+if is-at[0 at[prefix expr] = endl]
+    do
+        define apply object[property[operator object[0]]
+        define current-expr pop[expr-stack]
+        set-at operator apply expr
+    
+        if is[length-at[prefix expr] > length-at[prefix current-expr]]
+            push apply at[args current-expr]
+            while is[length-at[prefix expr] < length-at[prefix current-expr]
+                set current-expr pop[expr-stack]
+                
+        push[current-expr expr-stack]
+
+if ?[.[expr prefix 0] = endl]
+
+    1
+    2
+    3
+    4
+
+    5
+    6
+    7
+    8
+
+cond
+    @ ?[a > 2]
+        x
+    @ ?[1]
+        y
+
+cond
+    @ ?[a > 2]
+        x
+    @ else
+        y
+
+a[1][2][3]
+
+a[1] 2 3
+
+.[object method] 3
+
+a
+    1
+        2
+            3

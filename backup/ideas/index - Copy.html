@@ -1,0 +1,160 @@
+<!-- todo: cleanup, values as variables -->
+<style>
+	body {
+		font-family: monospace;
+		background-color: #333;
+	}
+	.call {
+		display: table;
+	}
+	.argument-pin, .connection {
+		display: table-cell;
+	}
+	.argument-pin {
+		text-align: right;
+		border-right: 1px solid #222;
+		border-left: 1px solid #222;
+		color: #ffa;
+		background-color: #444;
+	}
+	.connection-name {
+		color: #ddd;
+		border-bottom: 4px solid #555;
+		position: relative;
+		top: calc(-0.5em - 3px);
+		padding-left: 0.5em;
+		padding-right: 0.5em;
+		margin-right: -1px;
+		margin-left: -1px;
+	}
+	.operator-pin {
+		border: 1px solid #222;
+		color: #ddd;
+		border-top-right-radius: 1em;
+		background-color: #444;
+		padding: 0.33em;
+		padding-left: 0;
+	}
+	.last {
+		border-bottom-left-radius: 1em;
+		border-bottom-right-radius: 1em;
+		border: 1px solid #222;
+		text-align: center;
+	}
+	.argument {
+		display: table-row;
+	}
+	.operator {
+		display: table-row;
+	}
+	.operator-column {
+		display: table-column;
+	}
+	.argument-pin-number {
+		border-top-left-radius: 1em;
+		border-bottom-left-radius: 1em;
+		background-color: #555;
+		padding-left: 1em;
+		margin-left: 1em;
+		margin-right: -1px;
+		border: 1px solid #222;
+		border-right: 1px solid #333;
+		margin-top: 0.1em;
+		margin-bottom: 0.1em;
+	}
+	.operator-pin-name {
+		border-top-right-radius: 1em;
+		border-bottom-right-radius: 1em;
+		background-color: #555;
+		padding-right: 1em;
+		margin-right: 1em;
+		margin-left: -1px;
+		border: 1px solid #222;
+		border-left: 1px solid #333;
+		padding-left: 0.25em;
+	}
+	.word {
+		background-color: #555;
+		color: #ddd;
+		border-top-right-radius: 1em;
+		border-bottom-right-radius: 1em;
+	}
+	.argument-pin-button {
+		border-radius: 1em;
+		background-color: #555;
+		margin: 0.33em;
+		margin-left: 1em;
+		margin-right: 1em;
+	}
+</style>
+<div class="call">
+	<div class="operator-column"></div>
+	<div class="operator">
+		<div class="operator-pin">
+			<div class="operator-pin-name">sequence</div>
+		</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">0</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="call">
+			<div class="operator-column"></div>
+			<div class="operator">
+				<div class="operator-pin">
+					<div class="operator-pin-name">define</div>
+				</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin">
+					<div class="argument-pin-number">0</div>
+				</div>
+				<div class="connection">
+					<div class="connection-name">name</div>
+				</div>
+				<div class="word">
+					five
+				</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin">
+					<div class="argument-pin-number">1</div>
+				</div>
+				<div class="connection">
+					<div class="connection-name">value</div>
+				</div>
+				<div class="word">5</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin last">.</div>
+			</div>
+		</div>
+
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">1</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="word">c</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">100</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="word">c</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin last">
+			<div class="argument-pin-button">+</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,59 @@
+branch[a < 0][
+	a
+	b
+	c
+][a < 5][
+	d
+	e
+	f
+][a < 10][
+	g
+	h
+	i
+]
+
+branch <- condition -> function(...) { if (condition/evaluated_condition) { evaluate ...; return branch-discard; } else return branch }
+branch-discard <- condition -> function(...) { return branch-discard; }
+
+branch[...][...][value] -> returns final value
+branch[...][...][else][...] -> else/default = 1
+
+branch[a < 0][
+	a
+	b
+	c
+][a < 5][
+	d
+	e
+	f
+][both a < 10 and a > 7][
+	g
+	h
+	i
+][default][
+	j
+	k
+	l
+][value]
+
+
+?[a < 0][
+	a
+	b
+	c
+][a < 5][
+	d
+	e
+	f
+][both a < 10 and a > 7][
+	g
+	h
+	i
+][default][
+	j
+	k
+	l
+][value]
+
+?[a < 0][3][:][5]
+?[a < 0][3][:][5][!]

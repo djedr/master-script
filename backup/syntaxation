@@ -1,0 +1,56 @@
+
+def[fun]\mac[{args}]\mac[{body}]\mac[alt]
+	\code'\functions*[args-list[{args}] do[{body}] {alt}]
+	
+def[fact]
+	\fun[value\#\1][#\1]
+	\fun[n]\*[n fact\-[n #\1]]
+
+fact[#\1]
+
+
+def[fact]\functions*[
+args-list[value\#\1] #\1
+functions*[args-list[n] *[n fact\-[n #\1]]]]
+
+def[fun]\mac[{args}]\mac[{body}][
+	def[alt]\undefined
+	def[c]\code'\functions*[args-list[{args}] do[{body}] {alt}]
+	list[mac[{alt}][c] c]
+]\mac[{alt}]
+	
+def[fact]
+	|fun[value|#|1][#|1]
+	|fun[n][*[n fact|-[n #|1]]]
+	\
+
+def [fact]
+	| fun [value|#|1] [#|1]
+	| fun [n]         [* [n fact|- [n #|1]]]
+	\
+	
+def [fact]
+	\ fun [value\#\1] [#\1]
+	\ fun [n]         [* [n fact\- [n #\1]]]
+	|
+	
+def [fact]
+| fun [value|#|1] [#|1]
+| fun         [n] [* [n fact|- [n #|1]]]
+\
+
+
+def [fact]
+\ fun [value\#\1] [#\1]
+\ fun [n]         [* [n fact\- [n #\1]]]
+|
+
+def [fact]
+| fun [=|#|1] [#|1]
+| fun         [n] [*[n fact|-[n #|1]]]
+!
+
+def [fact]
+| fun [= | # | 1] [# | 1]
+| fun         [n] [* [n fact | - [n # | 1]]]
+\

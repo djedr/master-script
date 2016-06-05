@@ -1,0 +1,16 @@
+<body>[
+    <canvas>[ ]
+]
+
+html[
+    <body style="color: |![body-color]">
+        <h1>hello!</h1>
+    </body>
+]
+
+js[ --|| on evaluation invokes function() { return <<the below code>>; }
+    function f(a) {
+        return a + 2 * |![factor];
+    }
+]
+

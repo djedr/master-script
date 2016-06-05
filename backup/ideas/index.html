@@ -1,0 +1,134 @@
+<!-- todo: cleanup, values as variables -->
+<style>
+	body {
+		font-family: monospace;
+		background-color: #222;
+		padding: 1em;
+	}
+	.call {
+		display: table;
+	}
+	.argument-pin, .connection {
+		display: table-cell;
+	}
+	.argument, .operator {
+		display: table-row;
+	}
+	.operator-column {
+		display: table-column;
+	}
+	.connection-name {
+		background-color: #555;
+		position: relative;
+		z-index: 2;
+		border-radius: 1em;
+		margin-left: -0.5em;
+	}
+	.argument-pin, .operator-pin {
+		/background-color: #555;
+		border-left: 4px solid #555;
+		border-radius: 1em;
+		/margin-right: -1em;
+	}
+	.argument-pin {
+		text-align: right;
+		color: #ffa;
+		width: 0.5em;
+	}
+	.operator-pin {
+		color: #ddd;
+		border-radius: 1em;
+	}
+	.last {
+		text-align: center;
+	}
+	.argument-pin-number, .operator-pin-name, .argument-pin-button { /* just pin? */
+		background-color: #ccc;
+		color: #333;
+		padding-left: 1em;
+		padding-right: 1em;
+		margin-top: 0.25em;
+		border-radius: 1em;
+	}
+	.argument-pin-number {
+		display: inline-block;
+	}
+	.operator-pin-name {
+		margin-left: -1em;
+		background-color: #fff;
+	}
+	.argument-pin-button {
+	}
+</style>
+<div class="call">
+	<div class="operator">
+		<div class="operator-pin">
+			<div class="operator-pin-name">
+				sequence
+			</div>
+		</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">0</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="call">
+			<div class="operator-column"></div>
+			<div class="operator">
+				<div class="operator-pin">
+					<div class="operator-pin-name">define</div>
+				</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin">
+					<div class="argument-pin-number">name</div>
+				</div>
+				<div class="connection">
+					<div class="connection-name">&nbsp;</div>
+				</div>
+				<div class="operator-pin-name">
+					five
+				</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin">
+					<div class="argument-pin-number">value</div>
+				</div>
+				<div class="connection">
+					<div class="connection-name">&nbsp;</div>
+				</div>
+				<div class="operator-pin-name">5</div>
+			</div>
+			<div class="argument">
+				<div class="argument-pin last"></div>
+			</div>
+		</div>
+
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">1</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="operator-pin-name">five</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin">
+			<div class="argument-pin-number">2</div>
+		</div>
+		<div class="connection">
+			<div class="connection-name">&nbsp;</div>
+		</div>
+		<div class="operator-pin-name">42</div>
+	</div>
+	<div class="argument">
+		<div class="argument-pin last">
+			<div class="argument-pin-button">+</div>
+		</div>
+	</div>
+</div>

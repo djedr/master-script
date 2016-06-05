@@ -1,0 +1,75 @@
+
+    define[
+    	macro
+        mac[a mac[d _?[mac[a d] d]]]
+    ]
+    define[
+    	if2
+        macro[a]\macro[b]\macro[c]
+        	\code\if[_\a _\b _\c]
+    ]
+    
+    define[
+		iff
+		mac[a
+			mac[b
+				mac[c
+					code\if[_\a _\b _\c]
+				]
+			]
+		]
+    ]
+    iff[false]
+		[number\32]
+	\iff[false]
+		[number\33]
+		[number\34]
+		
+	if[false number\32 iff[false][33][34]]
+	
+expr.operator.parent
+tests
+
+
+def[dict]\macro[opt\a opt\b][
+	def[aux]\macro[a opt\b]
+		\code\{a b} -- note: b can be undefined
+	-- if a is defined
+	list[aux code\(dict)[{if[a is-defined]\list[aux code|]}] -- TODO: make this work
+	-- else
+	-- code\(dict)|
+]
+
+def[dict]\macro
+[a b][
+	def[args]\list[a b] -- list[{a b}]
+	def[aux]\macro[c d][
+		mut-append[args][c d] -- {c d}
+		list[aux code\apply[(dict) {args}]
+	]
+	list[aux code\(dict)[{a b}]]
+]
+[]\code\(dict)|
+
+|
+|
+v
+
+mac[rest[args] match[args list:[a b] body1... list:[] body2...]
+
+optimize rest:
+	if rest is the only argument, just assign args to rest's argument
+	otherwise slice?
+
+type
+length
+values
+
+is args type list?
+is args length 2?
+is args' first arg any? -- assignable to a?
+is args' second arg any? -- assignalbe to b?
+
+match the whole structure (type and length/characteristic properties)
+match substructures recursively if any
+

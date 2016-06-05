@@ -126,6 +126,7 @@ wsServer.on('request', function(request) {
                 var obj = JSON.parse(msg);
                 var selected = obj["selected"];
                 var open = obj["open"];
+                var path = obj["pathToRead"];
                 var newDirectory = "";
 
                 if (selected && selected != ".") {
@@ -139,6 +140,15 @@ wsServer.on('request', function(request) {
                     }
 
                     sendUpdatedListing(newDirectory);
+                }
+
+                if (path) {
+                    console.log(fs.readFile(path, function (error, contents) {
+                        if (error) throw error;
+                        connection.sendUTF(JSON.stringify({
+                            fileContents: contents.toString("utf8")
+                        }));
+                    }));
                 }
 
                 if (open) {

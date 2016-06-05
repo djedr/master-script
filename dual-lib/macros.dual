@@ -1,0 +1,40 @@
+--
+-- basic macros: implicit import
+--
+
+define* [bind
+    macro* [a
+        macro* [b
+            code'|define* [{a b}]
+        ]
+    ]
+]
+
+bind [macro]
+| macro* [{args}
+    macro* [body
+        code'|macro* [{args body}]
+    ]
+]
+
+bind [if]
+| macro [{condition}]
+    | macro [{then}]
+        | macro [{else}]
+            | code'|if* [{condition} do[{then}] do[{else}]]
+            
+bind [of]
+| macro [{args}]
+    | macro [{body}]
+        | macro [{alt}]
+	       | code'|functions* [args-list[{args}] do[{body}] {alt}]
+            
+bind [match]
+| macro [{args}]
+	| macro [op]
+		| code'|{op}[{args}]
+		
+bind[async]
+	| macro [method]
+		| macro [{args}]
+			code'|async*[method {args}]

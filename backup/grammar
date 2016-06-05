@@ -1,0 +1,208 @@
+checking comments
+
+<expression> ::= <operator> "[" <arguments> "]"
+<operator> ::= <expression>
+<operator> ::= <word>
+<arguments> ::=  <operator> <arguments>
+<arguments> ::= ""
+<word> ::= /^[^\s\[\]]+/
+
+<expression> ::= <operator> "[" <arguments> "]"
+<operator> ::= <word> | <expression>
+<arguments> ::= <operator> <arguments> | ""
+<word> ::= /^[^\s\[\]]+/
+
+
+<expression> ::= <operator> "[" <argument>* "]"
+<operator> ::= <expression> | <word>
+<argument> ::= <operator>
+<word> ::= /^[^\s\[\]]+/
+
+
+<expression> ::= <operator> "[" <operator>* "]"
+<operator> ::= <expression> | <word>
+<word> ::= /^[^\s\[\]]+/
+
+define [ a number[3] ]
+
+chain[a][b][c][d]
+
+
+// no left recursion:
+<expression> ::= <operator> <argument-list>
+<operator> ::= <word> <argument-lists>
+<argument-list> ::= "[" <arguments> "]"
+<word> ::= /^[^\s\[\]]+/
+<argument-lists> ::= <argument-list> <argument-lists> | ""
+<arguments> ::= <operator> <arguments> | ""
+
+//
+thesis title
+    The Dual Programming Language
+    vs.
+    Dual. A web-based, Pac-Man-complete hybrid text and visual programming language
+    vs.
+    Dual. A web-based hybrid text and visual programming language
+
+language's syntax/grammar
+    language's grammar in BNF-notation, without left-recursion, a bit verbose:
+
+    <expression>     ::= <word> | <call>
+    <call>           ::= <operator> <argument-list>
+    <operator>       ::= <word> <argument-lists>
+    <argument-list>  ::= "[" <arguments> "]"
+    <word>           ::= /^[^\s\[\]]+/
+    <argument-lists> ::= <argument-list> <argument-lists> | ""
+    <arguments>      ::= <expression> <arguments> | ""
+
+
+    <expression>       ::= <word> <expression-lists>
+    <word>           ::= /^[^\s\[\]]+/
+    <expression-lists> ::= "[" <expressions> "]" <expression-lists> | ""
+    <expressions>      ::= <expression> <expressions> | ""
+
+    whitespace is mostly non-significant;
+    it doesn't influence the semantics of a program, although it is stored in the syntax tree and can be accessed by special primitives, such as `string`
+
+language's semantics
+    AST is a tree of nested expression objects
+    there are two types of expressions:
+        word
+            an identifier/name
+            usually refers to some value in the accessible scope
+            could also be treated as literal string (possibly parsed to a number), depending on the operator that evaluates it
+        call
+            an application
+            consists of an operator (which is an expression that is being applied) and arguments (which are fed to the operator)
+            should produce a value
+
+    every language element is an expression and has a value
+
+    define
+        aliases: :
+        arity: 2
+        arguments: name, value
+        description:
+            creates a value accessible in the closest scope under the `name` label; the value is the result of evaluating `value`
+        returns: the result of evaluating `value`
+
+    sequence
+        aliases: seq, do
+        arity: * (0..infinity)
+        description: evaluates its arguments in order
+        return: the value of its last argument
+
+    string
+        aliases: $
+        arity: *
+        description:
+            returns its arguments' names and the whitespace between them as a string value, as in:
+                $[Hello, wolrd!]
+            would be more-or-less equivalent to Java string:
+                "Hello, world!"
+        notes:
+            this kind of string is multiline and could work with embedded expressions, as in:
+                $[Hello, \$[name]!]
+            if `name` would refer to another string of value e.g. "Alan" this would produce a string like:
+                "Hello, Alan!"
+
+    if
+        aliases: conditional
+        arity: 3
+        arguments: condition, then-expression, else-expression
+        returns:
+            if `condition` evaluates to `true`, the value of `then-expression`, otherwise the value of `else-expression`
+            alternatively the condition could be checked against a non-zero value instead of `true`
+        note:
+            I will most likely drop the concept of booleans entirely and treat 0 as a special value, representing `false`, `null`, `undefined`, empty
+            any non-zero value would then represent `true`
+
+    while
+        arity: 2
+        arguments: condition, loop-body
+        description: a basic loop construct; if `condition` is equivalent to `true`, evaluates `loop-body`; repeats these steps until `condition` evaluates to `false` (0)
+        returns: `false` (0)
+
+    number
+        aliases: #
+        arity: 1
+        description:
+            parses its argument's name as a number, as in:
+                #[3]
+            evaluates to the number 3
+        returns: a number parsed from its argument's name
+
+    boolean
+        aliases: ?
+        arity: 1
+        description:
+            parses its argument's name as a boolean, as in:
+                ?[true]
+            evaluates to `true`
+        returns: `true` or `false`, depending on its argument name
+        note: likely will be dropped from the language
+
+    print$
+        arity: *
+        description:
+            works like `string`, but also prints its value to the JavaScript console
+
+
+    todo:
+        greater-than
+        aliases: >, gt
+        arity: 2
+        arguments: a, b
+        description: checks if `a` is greater than `b`
+        returns:
+            `true` if `a` greater than `b`, `false` otherwise
+            alternatively `a` if `a` greater than `b` and non-zero, infinity if `a` equal to zero, but greater than `b` and zero otherwise
+
+        less-than
+        aliases: <, lt
+        description: analogous to greater-than, only checks if `a` less than `b`
+
+        ...other operators and common functions
+
+        function
+            aliases: fun, /
+            arity: 1..*
+            arguments: arg* (zero or more), function-body
+            description:
+                creates a function value
+                all the arguments up to the last are the names of the function arguments (must be identifiers); the last argument is the `function-body`
+            returns:
+                a function that accepts the defined number of arguments and evaluates them in the context of the `function-body`;
+                such a function creates its own local environment on top of the environment it is defined in,
+                puts the argumens it was called with in this environment, under the defined labels and evaluates the `function-body` in this environment;
+                the return value is the value of the `function-body`
+
+        // branch
+        // switch
+        // array
+        // set
+
+    special elements (not implemeted):
+        \
+        description: interpreter switch; precedes an interpreter command (which is a valid language identifier), which changes (possibly temporarily) the behaviour of the interpreter
+        for example:
+            if\3 flag then-do-this else-do-this
+        would be equivalent to:
+            if[flag then-do-this else-do-this]
+       here \ executes a numerical command (3) that makes the interpreter treat next 3 expressions as arguments to the preceding expression, which would be applied to them
+       this would be a simple way of getting rid of excess closing brackets ']'
+       I have a few other ideas to utilize the interpreter switch, such as comments/documentation.
+
+language's "memory model"
+    to call it a memory model is a stretch;
+    every program is evaluated in an environment, which is a JavaScript object (basically a string key-any value map);
+    the keys in the environment object are variable names/identifiers;
+    the values are the values associated with the corresponding identifiers;
+    the environment that is accessible at all times is the root environment, where all globally-accessible values live
+    it should be populated with basic arithmetic and logic operators, functions and constructs that are not special language primitives (such as if, while, string, etc.)
+    all functions defined in the language have their local environment, build on top of the environment that contains the function definition (closures work)
+    functions have access to values in their local environments and all containing environments
+    the local environment can have identifiers defined that override outer enivronments' identifiers (but they don't overwrite them)
+    this mechanism is built on top of JavaScript's prototype-based inheritance
+
+

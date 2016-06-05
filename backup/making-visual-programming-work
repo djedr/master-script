@@ -1,0 +1,56 @@
+How to make visual programming work?
+It has to have all the features of text environment and more.
+
+It has to be way better than anything before.
+
+Combine the good parts of both.
+Impossible/almost impossible to make a syntax error
+Search/replace/splice/move/edit/delete
+highlight
+
+cite Aardappel
+
+THE bug:
+gap between variables
+arr:
+0: obj
+1: undefined
+2: obj
+
+because of off-by-one error
+
+possibly when {alt} is empty this happens
+
+why reference error then?
+maybe env["alt"] = arr[1] // which is undefined
+
+environment available in language
+	first class
+	
+bind returns local environment if bound successfully
+undefined if not?
+
+bind[local-env][bind[][]]
+bind[_][] just returns the env?
+
+bind-in[dict][var][val]
+
+bind[list[a b c d e]][replicate[0 5]]
+
+[x] context
+[v] scope 
+[x] site
+[x] region
+
+string -> text
+environment -> scope
+
+
+substitute should handle strings
+
+configurable substitute:
+match meta structure
+{{}}
+{$ ...}
+{$ ... $}
+${...}?

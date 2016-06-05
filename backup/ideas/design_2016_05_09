@@ -1,0 +1,66 @@
+manipulating trees
+
+constructing trees:
+	drag & drop, clicking, visual techniques
+	voice recognition
+	text
+	
+basic format:
+	text
+	
+alternate view on the AST
+
+https://www.youtube.com/watch?v=hM1oLr9G3-Q
+
+selection:
+	longest correct parse within
+	
+invoke parser with certain input
+
+manual mode: allow free text editing; invoke parse manually
+
+if [ or ] deleted: switch to manual mode until [] rebalanced
+
+always know the context
+have the text be clean
+on change parse the diff and insert into context
+make text clean
+
+inconsistent naming scheme:
+	emitEvent
+	character_index
+	
+[v] context in the tree
+[v] character to the left of cursor
+character to the right of cursor
+incoming character
+
+highlight current node
+
+// comments
+do[
+	\--[defining something here]
+	define[
+		a
+		4 \--[it's value is 4]
+	]
+]
+
+do[
+	--[defining something here]
+	define[
+		a
+		4 --[it's value is 4]
+	]
+]
+
+-1[variable]
+
++1[variable]
+
+comment-out:
+\--- do[
+	define[
+		a
+	]
+]

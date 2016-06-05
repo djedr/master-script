@@ -1,0 +1,11 @@
+only parser does recursion
+	builds tree
+	
+eliminate recursion
+	evaluate -> evaluateTree
+	
+functions*
+	list of cases
+		go through them in order iteratively
+		
+same for if-else-if

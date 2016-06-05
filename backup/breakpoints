@@ -1,0 +1,44 @@
+match [x]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] ['[x greater than 2]]
+\
+
+match [x]
+[ of  [=|0] [0]
+[ of [<=|2] [1]
+[ of    [n] ['[x greater than 2]]
+]]]
+
+breakpoints to syntax nodes
+
+match [x]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| '[x greater than 2]
+
+if macro is the end result then error
+
+setTimeout should get the number as the first argument
+
+x[a] => x["a"]
+make x['[a]] => x["a"] as well
+
+bind-in
+or
+obj[bind][prop][val]
+
+bind[in[scope prop]][3]
+bind[in[list 5]][35]
+
+bug with if -- really bad one; macroexpansion is too permanent
+	not just if
+something's up with set macro
+
+could transform dash case to camelCase if necessary when accessing props of objs:
+request-animation-frame -> requestAnimationFrame
+if name in obj || transformToCamelCase(name) in obj {
+	...
+} else {
+	error
+}

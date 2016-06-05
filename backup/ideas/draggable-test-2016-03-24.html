@@ -1,0 +1,33 @@
+<div style="border: 1px solid black" draggable="true">hello</div>
+
+
+keys = ["@0", "@1", "@1@0", "@1@1"];
+keys = ["/0", "/1", "/1/0", "/1/1"];
+
+
+
+key = currentPath + '/' + i;
+keys.push(key);
+tree[key] = expression;
+
+var i, key, keysLength, keyLength, previousKeyLength = 0;
+
+result = `<opening-tags>${root}`;...
+
+for (var i = 0, key = keys[i], keysLength = keys.length; i < keysLength; ++i) {
+	keyLength = key.length;
+	
+	if (key.slice(-2) === '/0') { // key[keyLength - 2] === '/' && key[keyLength - 1] === '0' // assuming minimum keyLength is 2
+		result += "<opening-tags>";
+	}
+	
+	result += visualise(tree, key, environment);
+	
+	if (keyLength < previousKeyLength) {
+		result += "</closing-tags>";
+	}
+	
+	previousKeyLength = keyLength;
+}
+
+result += `</closing-tags>`;

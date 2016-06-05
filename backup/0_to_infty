@@ -1,0 +1,25 @@
++[2 4]
+/[2 0] => infinity
+>[2 3] => 0
+>[3 2] => 3
+<[2 4] => 2
+<[4 2] => 0
+
+>[0 -2] => -2 // infinity
+>[-2 0] => 0
+<[0 -3] => 0
+<[0 5] => 5 // infinity
+
+>[0 0] => 0
+>=[0 0] => 1 // infinity
+
+=[0 0] => 1 // infinity
+=[0 7] => 0
+
+infinity better
+	informs you that:
+		0 was the first argument
+		it "passed" the test -- you can assume later that 0 was returned if needed
+		
+invert[infinity] => 0
+invert[0] => infinity 

@@ -1,0 +1,6 @@
+compute sha of the string fragment until the point of edit
+compare with previous -- all fragments cached
+
+if same -- no change
+
+read about diffs

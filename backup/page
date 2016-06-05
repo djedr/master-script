@@ -1,0 +1,69 @@
+bind[page]|html'[
+	<html>
+		<head>
+		<style>
+			body {
+				background-color: #111;
+				color: #ddd;
+			}
+
+			a {
+				color: #d99;
+			}
+
+			#info {
+				font-size: 48px;
+			}
+
+			#container {
+				width: 50%;
+				margin: auto;
+				text-align: center;
+			}
+
+			#{{stringToXml(containerId)}} {
+				position: relative;
+				width: {stringToXml(floatToString(canvasWidth))}px;
+				height: {stringToXml(floatToString(canvasHeight))}px;
+				background-color: #010101;
+				margin: auto;
+			}
+
+			#{{stringToXml(canvas2Id)}} {
+				display: none;
+				position: absolute;
+				top: 0px;
+				left: 0px;
+			}
+
+			#{{stringToXml(canvasId)}} {
+				display: block;
+				position: absolute;
+				top: 0px;
+				left: 0px;
+			}
+		</style>
+		</head>
+
+		<body>
+			<div id="container">
+				<h1>Pillman</h1>
+
+				<div id="{{containerId}}" tabindex="1" l:onfocus="{{initializeProcId ! 0; }}">
+					<canvas id="{{canvas2Id}}" width="{{floatToString(canvasWidth)}}" height="{{floatToString(canvasHeight)}}"></canvas>
+					<canvas id="{{canvasId}}" width="{{floatToString(canvasWidth)}}" height="{{floatToString(canvasHeight)}}"></canvas>
+					<div id="info">Click this canvas to start.</div>
+				</div>
+				<div id="msg"></div>
+				<span>The canvas above must be focused for the keyboard input to work.</span><br />
+				<span>[SPACEBAR] controls Pillman</span><br />
+				<span>or alternatively</span><br />
+				<span>[Z] changes Pillman's direction and [X] changes Pillman's planet</span><br />
+				<br />
+				<span>[F2] restarts the game</span><br />
+				<span>[F4] snapshots the canvas</span><br />
+				<a id="download" tabindex="2" download=""></a>
+			</div>
+		</body>
+	</html>
+]

@@ -1,0 +1,79 @@
+visual languages
+	scratch
+	unreal blueprint
+	noflo
+	
+nowoczesne, rozwijane, popularne, wysoko w google
+
+http://aosabook.org/en/500L/blockcode-a-visual-programming-toolkit.html
+
+common platform
+	javascript + HTML + CSS
+advantages of visual representation, w/o giving up the text
+dynamic, (hopefully) real-time mapping between representations
+functional features
+
+prototype, proof-of-concept
+well-designed
+goal:
+	implement a working dynamic application in it (Tetris)
+compare with other solutions
+
+easily accessible (web platform, common patterns)
+auto structure (CSS layout algorithms)
+mapping to code (textual-visual hybrid0
+language = IDE
+
+performance
+	css 'functions'
+
+representation
+	everyone understands blocks & connections
+	
+scratch
+	resembles code a lot
+	defined, stiff structure
+	
+blueprint
+	blocks connected with lines
+	no structure
+	
+noflo
+	javascript
+	no structure by default, but optional structure?
+		https://github.com/noflo/noflo-ui/issues/53
+	
+luna?
+	niewysoko w goole
+	modern
+	functional
+	visual profiling
+	no structure
+	http://www.luna-lang.org/
+
+puzzle kodowe
+	ustrukturyzowane
+bloczki ze strzałkami
+	najpopularniejsze
+	chaotyczne
+	częściowo-ustrukturyzowane
+	
+	układy scalone
+	shadery
+	
+flowcharty
+	częściowo-ustrukturyzowane
+	
+inne
+	Lamdu -- haskell z wielkościami czcionki
+	
+	
+bloczki 
+
+
+***
+
+sequence
+conditional
+variable declaration
+excel

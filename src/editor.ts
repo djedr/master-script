@@ -7,27 +7,7 @@ var editor,
     parsedProgram;
 
 function run_() {
-    console.log(evaluate(parsedProgram, {
-        "true": true,
-        "false": false,
-        "undefined": undefined,
-        "is-defined": (a) => { return a !== undefined; },
-        "not": (a) => { return !a; },
-        "=": (a, b) => { return a === b; }, // Object.is?
-        "<>": (a, b) => { return a !== b; }, // !Object.is?
-        "+": (a, b) => { return a + b; },
-        "-": (a, b) => { return a - b; },
-        "-#": (a) => { return -a; }, // unary minus
-        "*": (a, b) => { return a * b; },
-        "/": (a, b) => { return a / b; },
-        "<": (a, b) => { return a < b; },
-        ">": (a, b) => { return a > b; },
-        "<=": (a, b) => { return a <= b; },
-        ">=": (a, b) => { return a >= b; },
-        //"set-page": (str) => { document.getElementById("page").srcdoc = str; },
-        "page": () => { return document.getElementById("page").contentWindow.document.getElementById("canvas-A"); },
-        "window": window
-    }));
+    console.log(evaluate(parsedProgram, rootEnv));
 }
 
 function parse_() {
@@ -281,8 +261,38 @@ window.addEventListener("load", function () {
         return;
     }
 
-    function toggleMenu() {
-        var menu = bindings["edit-menu"].node.querySelector(".menu");
+    function getNativeExecCommandHandler(command) {
+        return function () {
+            editor.focus();
+            if (document.execCommand(command) === false) {
+                alert("Your browser doesn't allow or support this option!");
+            }
+        }
+    }
+    function getEditorExecCommandHandler(command) {
+        return function () {
+            editor.focus();
+            if (editor.execCommand(command) === false) {
+                alert("Your browser doesn't allow or support this option!");
+            }
+        }
+    }
+
+    var editorCommands = {
+        // native browser commands
+        "cut": getNativeExecCommandHandler("cut"),
+        "copy": getNativeExecCommandHandler("copy"),
+        "paste": getNativeExecCommandHandler("paste"),
+        // code mirror's commands
+        "select all": getEditorExecCommandHandler("selectAll"),
+        "undo": getEditorExecCommandHandler("undo"),
+        "redo": getEditorExecCommandHandler("redo"),
+    }
+
+
+
+    function toggleMenu(event) {
+        var menu = event.target.menu
         if (menu.style.display === "block") {
             menu.style.display = "none";
         } else {
@@ -291,11 +301,23 @@ window.addEventListener("load", function () {
     }
 
     var bindings = {
-        "edit-menu": {
+        ".menu-button": {
+            "init": function (binding, node) {
+                node.menu = node.querySelector(".menu");
+                node.tabIndex = 0;
+            },
             "event-handlers": {
-                "click": toggleMenu,
                 "blur": toggleMenu,
-                "focus": function () { console.log("wtd")}
+                "focus": toggleMenu
+            }
+        },
+        ".option": {
+            "init": function (binding, node) {
+                var optionName = node.textContent.toLowerCase();
+
+                node.addEventListener("click", editorCommands[optionName] || function () {
+                    alert("This option is not implemented yet!");
+                });
             }
         }
     };
@@ -311,40 +333,25 @@ window.addEventListener("load", function () {
         theme: 'zenburn'
     });
     doc = editor.getDoc();
-    function readTextFile(file)
-    {
-        var rawFile = new XMLHttpRequest();
-        rawFile.open("GET", file, false);
-        rawFile.onreadystatechange = function ()
-        {
-            if(rawFile.readyState === 4)
-            {
-                if(rawFile.status === 200 || rawFile.status == 0)
-                {
-                    var allText = rawFile.responseText;
-                    setTimeout(_ => {
-                        // var marks = doc.getAllMarks();
-                        // for (var i = 0; i < marks.length; ++i) {
-                        //     marks[i].clear();
-                        // }
-                        //doc.setValue(allText);
-                        doc.off('cursorActivity', onCursorActivity);
-                        doc.replaceRange(allText, {line:0, ch:0}, {line:10000, ch:0});
-                        setTimeout(_ => {
-                            //doc.replaceRange("", doc.posFromIndex(allText.length), {line:10000, ch:0});
-                            parse_();
-                            doc.on('cursorActivity', onCursorActivity);
-                            editor.refresh();
-                        }, 1000);
-                        // editor.refresh();
-                    }, 1000);
-                }
-            }
-        }
-        rawFile.send(null);
-    }
 
-    readTextFile("./test-program.dual");
+    readTextFile("./test-program.dual", function (text) {
+        setTimeout(_ => {
+            // var marks = doc.getAllMarks();
+            // for (var i = 0; i < marks.length; ++i) {
+            //     marks[i].clear();
+            // }
+            //doc.setValue(allText);
+            doc.off('cursorActivity', onCursorActivity);
+            doc.replaceRange(text, {line:0, ch:0}, {line:10000, ch:0});
+            setTimeout(_ => {
+                //doc.replaceRange("", doc.posFromIndex(allText.length), {line:10000, ch:0});
+                parse_();
+                doc.on('cursorActivity', onCursorActivity);
+                editor.refresh();
+            }, 1000);
+            // editor.refresh();
+        }, 1000);
+    });
 
     var start_stack = [];
     var arg_start_stack = [];

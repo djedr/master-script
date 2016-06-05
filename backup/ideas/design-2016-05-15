@@ -1,0 +1,90 @@
+marker holds expression
+expression holds marker
+DOM node holds expression
+expression holds DOM node
+
+syntax tree manipulation
+syntax tree building
+	e.g. from text file
+	
+syntax tree execution (interpretation)
+
+make undo/redo work -- plug into codemirror
+"]    "
+
+camelCase all the things
+currentlySelectedExpression should be that, not its node
+
+pick: function(data, i) {
+      var completion = data.list[i];
+      if (completion.hint) completion.hint(this.cm, data, completion);
+      else this.cm.replaceRange(getText(completion), completion.from || data.from,
+                                completion.to || data.to, "complete");
+      CodeMirror.signal(data, "pick", completion);
+      this.close();
+    },
+    
+validation
+
+markers on whitespace
+
+douglas crockford
+
+arguments by name
+sugar to reduce typing
+
+suppose we have fun f(a, b, c) { a + b + c }
+
+calling:
+f(a: sth, b: sth2, c: sth3)
+
+or if you have a, b, c defined in current scope:
+f(a, b, c)
+or:
+f(\current-scope)
+
+or:
+call[f]
+
+call-cc
+
+call in current scope:
+call-cs
+
+call-names[f a sth b sth2 c sth3]
+call-names[f @[a sth] @[b sth2] @[c sth3]]
+
+`[f a b c] // lisp style call
+``[f a sth b sth2 c sth3] // with argument names
+```[f @[a sth] @[b sth2] @[c sth3]] // alternative
+
+`:[f|a: sth, b: sth2, c: sth3] // yet another (defines DSL within [])
+
+/[]
+
+fun[]
+f[]
+lambda[]
+λ[]
+
+ a [ ] [ ] 
+
+a _
+. _[ _]
+. _[ _]
+
+write tests for the parser
+
+// bug in inserting visually
+
+bugs related to marker left and right inclusivity
+root node marker: make sure character indices are right
+
+bugs when clicking on space -- wrong marker
+weird bug where _sometimes_ wrong visual node gets replaced
+	perhaps related to currentlySelectedExpression being set both in code and in visual
+
+timing of events
+
+tokens instead of text markers?
+make parsers the same

@@ -1,0 +1,39 @@
+macro|def[if]
+	|fun[a op b]
+		|fun[...|then-branch]
+			|fun[...|else-branch]
+				|node
+					|if![
+						?[op[a b]]
+						do[...|then-branch]
+						do[...|else-branch]
+					]
+					
+def[dual]
+	|fun[m n]
+		|fun[...|args]
+			|if[length|args = 0][
+				n
+			]
+			|else[
+				m[...|args]
+			]
+			
+macro|def[if-e]
+	|fun[a op b]
+		|fun[...|seq]
+			fun[...|args]
+				|code
+					|if![?[op[a b]]
+						do[...|seq]
+						macro[
+							if![?[length|args = 0]
+								code[0]
+								if-e[...|args]
+							]
+							
+						]
+					]
+					
+					
+#|3

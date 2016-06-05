@@ -1,0 +1,43 @@
+Lots of changes:
+1. Added just-in-time expanded macros that can return other macros that greatly extend the capabilities of the language
+	a) Defined macros on top of basic primitives to get a nicer syntax that avoids too many closing parentheses next to each other with almost no cost (the only one-time cost is expanding the macro)
+2. Improved syntax and semantics:
+	a) Added special pipe | character to handle one argument function invocation, as in 'factorial|5' <=> 'factorial(5)'
+	b) Added special backslash \ character to handle zero argument function invocation, as in 'init\' <=> 'init()'
+	b) Added special curly brace { } characters, which are a universal notation for flattening arrays and substitution; in the context of symbol definitions (functions, macros, variables), they serve as "rest parameters" mechanism found in Lisp and recently in JavaScript as well
+	c) Added support for comments:
+		i) Line comments that start with '--' and extend to the end of the line
+		ii) Block comments that can be nested; they start with '--[' and extend until matching ']'
+	d) Added support for strings with expression substitution, built on top of the curly brace mechanism:
+		i) Strings start with "'[" and extend until matching "]"
+		ii) Support for HTML strings, JSON strings and JavaScript strings will be added; these all will parse to their respective native representations and use the same substitution mechanism, except that two curly brace characters will be required to trigger the substitution, as in '{{something}}', because of '{x}' having a defined meaning in JavaScript and JSON -- and thus in HTML, when these are mixed
+	e) Added support for literal number values
+	f) Added support for evaluating object attributes and array elements at given indices by invoking the object/array with
+		i) In case of object: the name of the attribute, as in 'obj|x' <=> 'obj.x'; 'obj|met[a b c]' <=> 'obj.met(a, b, c)'
+		ii) In case of array: the index of the element, as in 'arr|0' <=> 'arr[0]'; negative indices count from the end of the array:
+		'arr|-2' <=> 'arr[arr.length - 3]' -- so 'arr|-0' <=> 'arr[arr.length - 1]'; this will probably change, so that the negative index will mean offset from array's length
+3. Populated the top level environment:
+	a) With simple arithmetic and logic functions, such as '+', '-', '*', '=', '>=', '<='...
+	b) With basic values, such as 'true', 'false' and 'undefined'
+	c) With 'set-page' function that accepts a string that contains HTML, which is used to construct a document in the "application view" described below
+4. Extended the editor:
+	a) Added early version of "application view" to the editor: an iframe that contains a HTML document that can be manipulated with Dual -- this is the main output of any Dual application; the application view is switched on by pressing the '[SHOW PAGE]' button in the left panel
+	b) Added '[PARSE]' and '[RUN]' buttons in the left panel that trigger their respective actions
+	c) The visual view and the text view are now connected to the syntax tree and thus to each other with support for:
+		i) A change to the code in one view is reflected in the other and in the syntax tree (this works to a limited degree for now)
+		ii) Navigating code in any view highlights the connected parts in the other view
+		iii) You can now insert blocks into visual view with raw code -- it is parsed and transformed for you
+5. Added deconstruction and pattern matching facilities:
+	a) When defining functions, macros or variables you can use not only words (names) that will be bound to values when invoking the function/macro/defining the variable; literal values can be used that will verify by equality comparison the values you pass in; comparison operators can be used for complex comparisons; list deconstruction in the form of 'list[a b c]' can be used to deconstruct a list value into 3 variables ('a', 'b' and 'c'); with some more coding, "code" deconstruction for macros will be possible to verify the passed in syntax tree nodes -- 'code[else[{args}]]' would match an 'else' application node with any number of arguments
+6. Improved CodeMirror syntax highlighting for the language:
+	a) Certain predefined constructs are recognized (like 'bind', 'match', 'define*') and highlighted according to some semantic rules; the names of these constructs and the rules are subject to change
+	b) Comments are recognized and highlighted
+	c) Strings
+	d) Numbers
+7. Added support for some CodeMirror extensions/features:
+	a) Showing hints/autocomplete
+	b) Displaying a placeholder in code window
+	c) Added CSS styles to improve the looks of CodeMirror
+8. Added custom event handling mechanism ('events.ts' file), which is used by the parser to communicate to the other parts of the system various information. This mechanism will be used throughout the whole application
+9. Added a file 'test-program.dual', which contains some code in Dual that I use for testing the language; it has implementations of the factorial and fibonacci functions, as well as macrodefinitions for basic constructs of the language; this file is currently loaded on editor startup, but this works only in Firefox
+10. Attempted to implement my own text editor, but switched back to CodeMirror; some code from this attempt is still left over
