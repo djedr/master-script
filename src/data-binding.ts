@@ -1,5 +1,5 @@
 function bindNodes(bindings, document) {
-    var binding, k, kk, i, eventHandlers, nodes, node, parent;
+    var binding, k, kk, i, eventHandlers, nodes, node, parent, init, states;
 
     for (k in bindings) {
         binding = bindings[k];
@@ -9,8 +9,12 @@ function bindNodes(bindings, document) {
             binding.nodes = document.querySelectorAll(k);
         } else {
             node = document.getElementById(k);
-            binding.node = node;
-            binding.nodes = [node];
+            if (node) {
+                binding.node = node;
+                binding.nodes = [node];
+            } else {
+                binding.nodes = [];
+            }
         }
 
         // addEventListeners
@@ -24,10 +28,19 @@ function bindNodes(bindings, document) {
         }
 
         // initialize
-        if (binding.init) {
+        init = binding.init;
+        if (init) {
             nodes = binding.nodes;
-            for (i = 0; i < nodes.length; ++i) {
-                binding.init(binding, nodes[i]);
+            if (init.length > 2) {
+                binding.states = states = [];
+                for (i = 0; i < nodes.length; ++i) {
+                    states.push({});
+                    init(binding, nodes[i], states[i]);
+                }
+            } else {
+                for (i = 0; i < nodes.length; ++i) {
+                    init(binding, nodes[i]);
+                }
             }
         }
 
@@ -53,16 +66,62 @@ function bindNodes(bindings, document) {
     }
 }
 
-function bindData(binding, data) {
-    var attr = binding.attr || "textContent", i;
-    for (i = 0; i < binding.nodes.length; ++i) {
-        binding.nodes[i][attr] = data;
+function bindData(binding, data, key = 0) {
+    var bind = binding.bind, attr, nodes, states, i;
+
+    nodes = binding.nodes;
+    states = binding.states;
+
+    // todo: make bind accept an object
+    if (bind) {
+        if (states) {
+            for (i = 0; i < nodes.length; ++i) {
+                bind(binding, data, key, nodes[i], states[i]);
+            }
+        } else {
+            for (i = 0; i < nodes.length; ++i) {
+                bind(binding, data, key, nodes[i]);
+            }
+        }
+        // note: this is a hax to update bindings w/o nodes
+        if (nodes.length === 0) {
+            bind(binding, data);
+        }
+    } else {
+        attr = binding.attr || "textContent";
+        for (i = 0; i < nodes.length; ++i) {
+            nodes[i][attr] = data;
+        }
+    }
+}
+
+function bindClone(binding, item, i, blueprint, clones, parent) {
+    var newNode;
+    bindData(binding, item, i);
+    newNode = blueprint.cloneNode(true);
+    newNode.id += '[' + i + ']';
+    clones.push(newNode);
+    parent.appendChild(newNode);
+}
+
+function arrayDataHandler(binding, data, blueprint, clones, parent) {
+    for (var i = 0; i < data.length; ++i) {
+        bindClone(binding, data[i], i, blueprint, clones, parent);
+    }
+}
+
+function objectDataHandler(binding, data, blueprint, clones, parent) {
+    for (var k in data) {
+        if (Object.prototype.hasOwnProperty.call(data, k)) {
+            bindClone(binding, data[k], k, blueprint, clones, parent);
+        }
     }
 }
 
 // could fire and handle events for updating
 function updateBindings(bindings, datas) {
-    var data, binding, blueprintNode, parentNode, newNode, nodes, k, i, j;
+    var data, binding, blueprintNode, parentNode, newNode, nodes, k, i, j, dataHandler;
+
     for (k in datas) {
         data = datas[k];
         binding = bindings[k];
@@ -72,7 +131,21 @@ function updateBindings(bindings, datas) {
 
         binding.data = data;
 
-        if (Array.isArray(data)) {
+        if (binding.list) {
+
+            if (!data) {
+                data = [];
+                console.warn("falsy data provided to iterate over!");
+            }
+
+            if (Array.isArray(data) || typeof data === "string") {
+                dataHandler = arrayDataHandler;
+            } else if (typeof data === "object") {
+                dataHandler = objectDataHandler;
+            } else {
+                throw new TypeError("Provided data can't be iterated over: wrong type!");
+            }
+
             for (i = 0; i < binding.blueprintNodes.length; ++i) {
                 blueprintNode = binding.blueprintNodes[i];
                 parentNode = binding.parentNodes[i];
@@ -82,38 +155,58 @@ function updateBindings(bindings, datas) {
                 for (j = 0; j < nodes.length; ++j) {
                     parentNode.removeChild(nodes[j]);
                 }
-                binding.cloneNodes[i] = [];
+                nodes = binding.cloneNodes[i] = [];
 
-                data.forEach((item, k) => {
-                    // detach blueprint node from parent
-                    bindData(binding, item);
-                    newNode = blueprintNode.cloneNode(true);
-                    newNode.id += '[' + k + ']';
-                    binding.cloneNodes[i].push(newNode);
-                    parentNode.appendChild(newNode);
-                });
+                // clone blueprint for each item in data
+                dataHandler(binding, data, blueprintNode, nodes, parentNode);
             }
-            // blueprintNode = binding.blueprintNode;
-            // parentNode = binding.parentNode;
-            // nodes = binding.cloneNodes;
-
-            // // clear previous nodes
-            // for (i = 0; i < nodes.length; ++i) {
-            //     parentNode.removeChild(nodes[i]);
-            // }
-            // binding.cloneNodes = [];
-
-            // data.forEach((item, i) => {
-            //     // detach blueprint node from parent
-            //     bindData(binding, item);
-            //     newNode = blueprintNode.cloneNode(true);
-            //     newNode.id += '[' + i + ']';
-            //     binding.cloneNodes.push(newNode);
-            //     parentNode.appendChild(newNode);
-            // });
         } else {
             bindData(binding, data);
         }
+
+        // if (Array.isArray(data)) {
+        //     for (i = 0; i < binding.blueprintNodes.length; ++i) {
+        //         blueprintNode = binding.blueprintNodes[i];
+        //         parentNode = binding.parentNodes[i];
+        //         nodes = binding.cloneNodes[i];
+
+        //         // clear previous nodes
+        //         for (j = 0; j < nodes.length; ++j) {
+        //             parentNode.removeChild(nodes[j]);
+        //         }
+        //         binding.cloneNodes[i] = [];
+
+        //         // clone blueprint for each item in data
+        //         data.forEach((item, k) => {
+        //             // detach blueprint node from parent
+        //             bindData(binding, item);
+        //             newNode = blueprintNode.cloneNode(true);
+        //             newNode.id += '[' + k + ']';
+        //             binding.cloneNodes[i].push(newNode);
+        //             parentNode.appendChild(newNode);
+        //         });
+        //     }
+        //     // blueprintNode = binding.blueprintNode;
+        //     // parentNode = binding.parentNode;
+        //     // nodes = binding.cloneNodes;
+
+        //     // // clear previous nodes
+        //     // for (i = 0; i < nodes.length; ++i) {
+        //     //     parentNode.removeChild(nodes[i]);
+        //     // }
+        //     // binding.cloneNodes = [];
+
+        //     // data.forEach((item, i) => {
+        //     //     // detach blueprint node from parent
+        //     //     bindData(binding, item);
+        //     //     newNode = blueprintNode.cloneNode(true);
+        //     //     newNode.id += '[' + i + ']';
+        //     //     binding.cloneNodes.push(newNode);
+        //     //     parentNode.appendChild(newNode);
+        //     // });
+        // } else {
+        //     bindData(binding, data);
+        // }
     }
 
     for (k in bindings) {

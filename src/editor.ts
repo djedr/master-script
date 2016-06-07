@@ -7,7 +7,7 @@ var editor,
     parsedProgram;
 
 function run_() {
-    console.log(evaluate(parsedProgram, rootEnv));
+    console.log(evaluate(parsedProgram, Object.assign({}, rootEnv)));
 }
 
 function parse_() {
@@ -239,8 +239,7 @@ function getMarkObjAt(position, offset = 0) {
 }
 
 window.addEventListener('message', function(event) {
-    if (event.origin === "http://127.0.0.1:8080") {
-
+    if (event.origin === "http://127.0.0.1:8081") {
 	   console.log("\n\n\n\n\nMESSAGE:", event.data, "/MESSAGE\n\n\n\n\n");
        localStorage.setItem("testing", event.data);
        localStorage.setItem("rand", "" + Math.random());
@@ -251,6 +250,15 @@ window.addEventListener('message', function(event) {
 window.addEventListener('storage', function(event) {
     console.log('editor storage', event);
 });
+
+var worker = new SharedWorker("src/worker.js");
+
+worker.port.addEventListener("message", function(e) {
+	console.log(e.data);
+}, false);
+
+worker.port.start();
+worker.port.postMessage("editor worker");
 
 window.addEventListener("load", function () {
     var consoleInput = document.querySelector("#console-input");
@@ -287,6 +295,24 @@ window.addEventListener("load", function () {
         "select all": getEditorExecCommandHandler("selectAll"),
         "undo": getEditorExecCommandHandler("undo"),
         "redo": getEditorExecCommandHandler("redo"),
+        // dual editor commands
+        "save": function () {
+            editor.focus();
+
+            var text = doc.getValue();
+
+            // this downloads the file:
+            // var a = document.createElement("a");
+            // var file = new Blob([text], {type: "text/x-dual"});
+            // a.href = URL.createObjectURL(file);
+            // a.download = "test.dual";
+            // a.click();
+
+            localStorage.setItem("fileToSave", JSON.stringify({path: "test.dual", contents: text}));
+            //localStorage.setItem("pathToSave", "./test.dual");
+
+            //window.open('data:text/x-dual;charset=utf-8,' + );
+        }
     }
 
 
@@ -334,7 +360,7 @@ window.addEventListener("load", function () {
     });
     doc = editor.getDoc();
 
-    readTextFile("./test-program.dual", function (text) {
+    readTextFile("./test.dual", function (text) {
         setTimeout(_ => {
             // var marks = doc.getAllMarks();
             // for (var i = 0; i < marks.length; ++i) {
@@ -367,12 +393,13 @@ window.addEventListener("load", function () {
             currentlySelectedExpression.style.opacity = "1";
             currentlySelectedExpression.expression.marker.css = "";
             currentlySelectedExpression.expression.marker.changed();
+
+            currentlySelectedExpression = mark.expression.node;
+            currentlySelectedExpression.style.opacity = "0.5";
         }
 
-        currentlySelectedExpression = mark.expression.node;
         mark.css = "opacity: 1; background-color: rgba(255, 255, 255, 0.1)";
         editor.refresh();
-        currentlySelectedExpression.style.opacity = "0.5";
     }
 
     doc.on('cursorActivity', onCursorActivity);
@@ -400,7 +427,9 @@ window.addEventListener("load", function () {
             name = name.slice(0, from.ch - token.start) + text + name.slice(to.ch - token.start);
             mark.expression.operator.name = name;
         }
-        mark.expression.node.querySelector(".word").textContent = name;
+
+        if (mark.expression.node)
+            mark.expression.node.querySelector(".word").textContent = name;
     });
 
     listenEvent('parse:initialize', (event) => {

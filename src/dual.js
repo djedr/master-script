@@ -112,13 +112,26 @@ CodeMirror.defineMode('dual', function(_config, _parserConfig) {
             var next;
 
             while (state.commentLevel > 0 && (next = stream.next()) != null) {
+                // if (next === "{") {
+                //     state.metaLevel++;
+                //     if (state.metaLevel > 0) {
+                //         state.metaClass = " meta";
+                //     }
+                // } else if (next === "}") {
+                //     state.metaLevel--;
+
+                //     if (state.metaLevel <= 0) {
+                //         state.metaClass = "";
+                //     }
+                //     return "meta";
+                // } else
                 if (next === open) state.commentLevel++;
-                if (next === close) state.commentLevel--;
+                else if (next === close) state.commentLevel--;
             }
             if (state.commentLevel <= 0) {
                 state.tokenize = tokenBase;
             }
-            return className;
+            return className + state.metaClass;
         }
     }
 

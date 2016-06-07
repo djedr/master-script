@@ -1,0 +1,552 @@
+--
+-- basic macros: implicit import
+--
+
+define* [bind
+    macro* [a
+        macro* [b
+            code'|define* [{a b}]
+        ]
+    ]
+]
+bind [macro]
+| macro* [{args}
+    macro* [body
+        code'|macro* [{args body}]
+    ]
+]
+bind [if]
+| macro [{condition}]
+    | macro [{then}]
+        | macro [{else}]
+            | code'|if* [{condition} do[{then}] do[{else}]]
+            
+bind [of]
+| macro [{args}]
+    | macro [{body}]
+        | macro [{alt}]
+	       | code'|functions* [args-list[{args}] do[{body}] {alt}]
+            
+bind [match]
+| macro [{args}]
+	| macro [op]
+		| code'|{op}[{args}]
+		
+bind[async]
+	| macro [method]
+		| macro [{args}]
+			code'|async*[method {args}]
+			
+
+--curious:
+--bind [if]
+--| of [=|true a _] [a]
+--| of [=|false _ b] [b]
+--!
+
+--
+-- basic functional operators: implicit import
+--    
+bind [fold-right]
+| of [fn initial list[head {tail}]] [fn[head fold-right[fn initial tail]]]
+| of [fn initial _] [initial] -- | of [fn initial list!] [initial]
+!
+
+--
+-- buggy things
+--
+bind [num]
+| macro [{args}]
+	| if [is-defined|args|1][
+        code'|{args|1}[number|{args|0} number|{args|2}]
+    ]
+    | code'|number|{args|0}
+
+bind [set]
+| macro [xa xop]
+	| macro [xb]
+		| code'|mutate*[{xa} {xop}[{xa xb}]] -- maybe here in op lies the problem -- permanent substitution
+		
+bind [<-]
+| macro [aaa bbb]
+    | code'|do[{bbb}]
+
+bind [test]|number|2
+
+-- seems that it makes xb be forever bound to if [false]...
+-- maybe mutate* does something weird here?
+set [test <-]
+| if [false]
+	[num|32]
+| if [false]
+	[number|33]
+	[num[34 + 22]]
+	       
+--
+-- tests
+--
+
+bind [fact]
+| of [=|1] [1]
+| of   [n] [* [n fact|- [n 1]]]
+!
+
+-- here be
+fact[5]
+-- dragons
+
+bind [fib]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| of    [n] [+[fib|-[n 1] fib|-[n 2]]]
+!
+
+fib[3]
+
+bind [x][5]
+
+match [x]
+| of  [=|0] [0]
+| of [<=|2] [1]
+| '[x greater than 2]
+
+
+-- match [x] [fib] -- like postfix notation
+
+-- functions*[of[] of[] of[]]
+
+-- match [true]
+-- | of [<[x 0]] ['[x is negative]]
+-- | of      [_] ['[x is not negative]]
+-- !
+
+-- bind [t]
+-- | if [>[a 0]] [a]
+-- | if      [_] [0]
+-- !
+
+--
+-- math
+--
+bind [square] -- perhaps make this native (js)/macro
+| of [a] [
+	*[a a]
+]!
+
+bind [sqrt] -- same
+| of [a] [
+	.[window Math sqrt][a]
+]!
+
+--
+-- physics
+--
+
+bind [+vec]
+| of [list[x1 y1] list[x2 y2]] [list[+[x1 x2] +[y1 y2]]]
+!
+
+bind [-vec]
+| of [list[x1 y1] list[x2 y2]] [list[-[x1 x2] -[y1 y2]]]
+!
+
+bind [*vec]
+| of [list[x1 y1] s] [list[*[x1 s] *[y1 s]]]
+!
+
+bind [line-circle-collision]
+| of [line circle] [
+	bind [d] [-vec[.[line 1] .[line 0]]]
+	bind [f] [-vec[.[line 0] .[circle 0]]]
+	
+	bind [a] |+[square|.[d 0] square|.[d 1]]
+	bind [b] |*[2 +[*[.[f 0] .[d 0]] *[.[f 1] .[d 1]]]]
+	--bind [b] |*[2 +[
+	--		*[.[f 0] .[d 0]] 
+	--		*[.[f 1] .[d 1]]
+	--]]
+	-- bind [b] |*[2 +[*[f|0 d|0] *[f|1 d|1]]] -- perhaps this notation should be supported for lists
+	bind [c] |-[+[square|.[f 0] square|.[f 1]] square|.[circle 1]]
+	bind [delta] |-[square|b *[4 *[a c]]] -- *[4 a c]
+	
+	if [>=[delta 0]] [
+		mutate* [delta .[widnow Math sqrt][delta]]
+		
+		bind [t1] |/[-[-#|b delta] *[2 a]]
+		bind [t2] |/[+[-#|b delta] *[2 a]]
+		
+		or[and[>=[t1 0] <=[t1 1]] and[>=[t2 0] <=[t2 1]]]
+	]
+	| false
+]!
+
+bind [circle-circle-collision]
+| of [circle-1 circle-2] [
+	bind [v] |-vec[.[circle-1 0] .[circle-2 0]]
+	bind [r] |+[.[circle-1 1] .[circle-2 1]]
+	
+	<[+[square|.[v 0] square|.[v 1]] square|r]
+]!
+
+bind [point-distance]
+| of [p1 p2] [
+	bind [diff] |-vec[p1 p2]
+	.[window Math sqrt]|+[square|.[diff 0] square|.[diff 1]]
+]!
+
+--
+-- output window
+--
+bind [iframe]|.[window document get-element-by-id]['|page]
+bind [game-window]|.[iframe content-window]
+
+bind [set-page]
+| of [src] [
+	:[iframe srcdoc src]
+	-- modify [iframe] [srcdoc] [src]
+	-- assign [iframe] [srcdoc] [src] -- assign means modify or extend
+]!
+
+--
+-- game
+--
+
+-- game output
+bind  [canvas-width] [600]
+bind [canvas-height] [480]
+bind  [container-id] |'[pillman-container]
+bind      [canvas-A] |'[game-canvas-A]
+bind      [canvas-B] |'[game-canvas-B]
+		
+set-page[html'[
+<head>
+	<style>
+		body {
+			background-color: #111;
+			color: #ddd;
+		}
+
+		a {
+			color: #d99;
+		}
+
+		#info {
+			font-size: 48px;
+		}
+
+		#container {
+			width: 50%;
+			margin: auto;
+			text-align: center;
+		}
+		#{{container-id}} {
+			position: relative;
+			width: {{canvas-width}}px;
+			height: {{canvas-height}}px;
+			background-color: #010101;
+			margin: auto;
+		}
+
+		#{{canvas-B}} {
+			display: none;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+
+		#{{canvas-A}} {
+			display: block;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+
+	</style>
+</head>
+<body>
+	<div id="container">
+		<h1>Pillman</h1>
+		
+		<div id="{{container-id}}" tabindex="1">
+			<canvas id="{{canvas-A}}" width="{{canvas-width}}" height="{{canvas-height}}"></canvas>
+			<canvas id="{{canvas-B}}" width="{{canvas-width}}" height="{{canvas-height}}"></canvas>
+			<div id="info">Click this canvas to start.</div>
+		</div>
+
+		<div id="msg"></div>
+		<span>The canvas above must be focused for the keyboard input to work.</span><br />
+		<span>[SPACEBAR] controls Pillman</span><br />
+		<span>or alternatively</span><br />
+		<span>[Z] changes Pillman's direction and [X] changes Pillman's planet</span><br />
+		<br />
+		<span>[F2] restarts the game</span><br />
+		<span>[F4] snapshots the canvas</span><br />
+		<a id="download" tabindex="2" download=""></a>
+	</div>
+</body>
+]]
+			
+-- .[lst 0]
+-- lst[0]
+-- lst|0
+-- 0|lst
+-- .[lst push]|5 -- could be colored specially
+-- semantic coloring: when names don't mean values, should be different colors
+-- bind [these are different][...]
+-- lst['|push]|5
+
+
+bind  [restart-key-code] [113]
+bind [download-key-code] [115]
+bind    [space-key-code] [32]
+bind        [z-key-code] [90]
+bind        [x-key-code] [88]
+
+bind              [iframe] |.[window document get-element-by-id]['|page]
+bind         [game-window] |.[iframe content-window]
+bind     [is-game-running] [false]
+bind [is-time-for-restart] [true]
+bind         [input-queue] [list!]
+bind    [initial-fps-info] [list!]
+
+bind [get-initial-game-state]
+| of![
+	bind [game-state][scope*!]
+	bind* [args-list[command] list|'|run game-state]
+	-- :[game-state command '|run]
+]!
+
+-- bind [%]
+-- | macro [a op b]
+--	| code'{op}[{a b}]
+
+-- macro -> on
+
+bind [min]
+| of [a b] [
+	if [<[a  b]] [a]
+	| b
+]!
+
+bind [main-game-logic]
+| of [game-state input] [
+	game-state
+]!
+
+fun handleKeys(i, gs: Game) {
+		if (length(i) > 0) fold_right(handleKey, gs, i)
+		else gs
+	}
+
+	fun changePillmanPlanet(gameState) {
+		if (not(gameState.pillman.nextPlanet == gameState.pillman.planet)) {
+			var newPlanet =
+				if (gameState.pillman.nextPlanet == leftPortal)
+					rightGhostPlanet
+				else if (gameState.pillman.nextPlanet == rightPortal)
+					leftGhostPlanet
+				else gameState.pillman.nextPlanet;
+			(gameState with pillman = (gameState.pillman with planet = newPlanet, angle = gameState.pillman.angle +. pi))
+		} else gameState
+	}
+	
+bind [handle-keys]
+| of [input game-state] [
+	--if [>[.[input length] 0]] [
+		fold-right[handle-key game-state input]
+	--]
+	--| game-state
+]!
+	
+bind [change-pillman-planet]
+| of [game-state] [
+	if [<>[.[game-state pillman next-planet] .[game-state pillman planet]]] [
+		bind [new-planet]
+		| match [.[game-state pillman next-planet]]
+			| of [left-portal] [right-ghost-planet]
+			| of [right-portal] [left-ghost-planet]
+			| .[game-state pillman next-planet]
+		--:[game-state pillman planet new-planet]
+		--:[game-state pillman angle +[.[game-state pillman angle] .[window Math PI]]]
+		--game-state
+		
+		inside* [.[game-state pillman] do[
+			
+			--put [new-planet +[.[game-state pillman angle] .[window Math PI]]]
+			--| in [planet angle]
+			--!
+			
+			mutate* [planet new-planet]
+			mutate* [angle +[.[game-state pillman angle] .[window Math PI]]]
+		]]
+		
+		--inside [game-state pillman]
+		--| mutate [planet angle] [new-planet +[.[game-state pillman angle] .[window Math PI]]]
+		
+		--mutate-in [game-state pillman]
+		--	[planet angle]
+		--	[new-planet +[.[game-state pillman angle] .[window Math PI]]]
+	]
+	| game-state
+]!
+	
+bind [handle-key]
+| of [key game-state] [
+	match [key]
+	| of [list[=|restart-key-code =|'|down]] [mutate-in* [command '|restart game-state]]
+	| of [list[=|download-key-code =|'|down]] [mutate-in* [command '|download game-state]]
+	| if [=[.[game-state mode] '|on]] [
+		match [key]
+		| of [list[=|space-key-code =|'|down]] [
+			mutate* [game-state change-pillman-planet[game-state]]
+			--mutate-in* [dir -#|.[game-state pillman dir] .[game-state pillman]] 
+			
+			
+			-- :[game-state change-pillman-planet[game-state]]
+			-- this will set even if not defined:
+			:[game-state pillman dir -#|.[game-state pillman dir]] -- negate[.[game-state pillman dir]]
+		]
+		| of [list[=|z-key-code =|'|down]] [
+			:[game-state pillman dir -#|.[game-state pillman dir]] -- negate[.[game-state pillman dir]]
+		]
+		| of [list[=|x-key-code =|'|down]] [
+			mutate* [game-state change-pillman-planet[game-state]]
+		]
+		| game-state
+	]
+	| game-state
+	
+	
+]!
+
+bind [update-logic]
+| of [delta game-state input] [		
+	if [delta > step] [
+		mutate* [game-state main-game-logic[game-state input]]
+		
+		update-logic[-[delta step] game-state, list!]
+	]
+	| list[game-state delta]
+]!
+
+bind [draw]
+| of [game-state previous-time now fps-info] [
+	log|'|drawing
+	fps-info
+]!
+
+-- todo: implement missing pieces from here
+-- implement bind-in, set-in macros based on new bind* primitive; add set* primitive
+-- speed up parsing by removing all the debug stuff that gets displayed
+-- fix the error on startup, when this file is loaded
+bind [main-loop] -- this should be update-game
+| of [game-state delta previous-time fps-info] [
+	-- log|'[main loop executing]
+	bind [input]|.[input-queue shift]! -- consider resetting input
+	bind [now]|.[game-window Date now]!
+	mutate* [delta +[delta min[1 /[-[now previous-time] 1000]]]]
+	-- debug*!
+	-- note: the next line causes bug with set
+	-- set [delta <-]|+[delta min[1 /[-[now previous-time] 1000]]]
+	-- #[delta + min[1 #[#[now - previous-time] / 1000]]]
+	-- %[delta + min[1 %[%[now - previous-time] / 1000]]]
+	-- (delta + min[1 ((now - previous-time) / 1000)])
+	
+	-- bind [list[new-game-state new-delta]]|update-logic[delta game-state input]
+	bind [temp]|update-logic[delta game-state input]
+	bind [new-game-state]|.[temp 0]
+	bind [new-delta]|.[temp 1]
+	
+	if [=[.[new-game-state command] '|restart]] [
+		-- log|'|restarting
+		async*[.[game-window request-animation-frame] update-game]
+	]
+	| if [=[new-delta delta]] [ -- don't redraw if no logic updates
+		-- log|'|no-redraw
+		async*[
+			.[game-window request-animation-frame]
+			of![
+				main-loop[new-game-state new-delta now fps-info]
+			]!
+		]
+	]
+	| async*[
+		.[game-window request-animation-frame]
+		of![
+			main-loop[
+				if [=[.[new-game-state command] '|download]] [
+					-- set-in[new-game-state][command]['|run] -- returns updated new-game-state
+					mutate-in* [command '|run new-game-state]
+				]
+				| new-game-state
+				new-delta
+				now
+				draw[new-game-state previous-time now fps-info]
+			]
+		]!
+	]
+]!
+
+bind [update-game] -- this should be (re)start-game
+| of ![
+	--
+	-- call main-loop with initial game state
+	-- 
+	log|'[starting the game]
+	async*[
+		.[game-window request-animation-frame]
+		of![
+			main-loop[
+				get-initial-game-state!
+				0.0
+				.[game-window Date now]!
+				initial-fps-info
+			]
+		]!
+	]
+]!
+
+bind [on-game-key-down]
+| of [event] [
+	.[input-queue push]|list[.[event key-code] '|down]
+]!
+
+bind [on-game-key-up]
+| of [event] [
+	.[input-queue push]|list[.[event key-code] '|up]
+]!
+
+
+bind [initialize-game]
+| of [][
+	if [=[false is-game-running]] [
+		log|'[initializing the game]
+		bind [game-container]|.[game-window document get-element-by-id][container-id]
+		
+		async*[.[game-container add-event-listener] '|keydown on-game-key-down]
+		async*[.[game-container add-event-listener] '|keyup on-game-key-up]
+
+		-- this should be mutate/set instead of bind
+		bind*[args-list|display list|'[none] .[.[game-window document get-element-by-id]['|info] style]]
+		
+		mutate*[is-game-running true]
+		
+		-- note: should remove event listener instead of checking is-game-running,
+		-- but in the current implementation it'll probably not work
+		
+		update-game!
+	]
+	| log|'[debug: game already initialized!]
+]!
+
+async*[.[window set-timeout] of![
+	bind [c-a]|.[game-window document get-element-by-id][canvas-A]
+	
+	log|'|hello
+	
+	async*[.[c-a add-event-listener] '|focus initialize-game]
+]! 1000]
+
+-- of[event]|log[event] -- make this an error
+-- of[event]|log[event]! -- this is ok, as it says that alternative is undefined
+-- of[event]|log[event]|'[nope] -- this is ok, as it supplies a value alternative that will always work

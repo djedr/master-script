@@ -13,34 +13,48 @@ const fs = require('fs');
 const drivelist = require('drivelist');
 const WebSocketServer = require('websocket').server;
 const WebSocketClient = require('websocket').client;
-const mainPort = 8080;
-const mainWebsocketPort = 8081;
-const mainProjectPort = 8082;
 
-var port = 8080;
-var host = '127.0.0.1';
+var optionsFileName = 'server-options.json';
+var optionsDefaults = {
+    "host": "127.0.0.1",
+    "websocket port": 8080,
+    "editor port": 8081,
+    "initial project port": 8082, // note: this won't be necessary probably, since node can read the filesystem alright
+    "browser": "chrome",
+    "cors": true
+}
+
+var optionsFile = fs.openSync(optionsFileName, 'a+');
+var contents = fs.readFileSync(optionsFile).toString("utf8");
+if (contents === "") {
+    contents = JSON.stringify(optionsDefaults);
+    fs.writeFileSync(optionsFile, contents);
+}
+var options = Object.assign({}, optionsDefaults, JSON.parse(contents));
+console.log(options);
+fs.closeSync(optionsFile);
+
+var port = options["websocket port"];
+var host = options["host"];
+var corsParam = options["cors"]? '--cors': "";
+var browserParam = options["browser"];
+var editorPortParam = options["editor port"];
+var projectPortParam = options["initial project port"];
+
+var websocketProtocol = "dual-protocol";
+
+var httpServerPath = 'node.exe ./node_modules/http-server/bin/http-server';
 
 var directory = __dirname;
-var HTML = "";//fs.readFileSync('project-manager.html').toString("utf8").replace(/`/g,'\\`');
 var client = new WebSocketClient();
 
-var env = Object.create(process.env);
-//env.PATH += ";"+__dirname + "/node_modules/http-server/bin";
-//env.PATHEXT += ";.JS;=;";
-// serve main app
-const manager = spawn('node.exe ./node_modules/http-server/bin/http-server', ['--cors', '-o', 'chrome', '-p', '8081'], { shell: true, env: env });// { stdio: 'inherit' });
-// serve editor
-//const editor = spawn('node.exe ./node_modules/http-server/bin/http-server', ['--cors', '-p', '8081'], { shell: true, env: env });// { stdio: 'inherit' });
-//opn("http://127.0.0.1:8081/project-manager/index.html", { app: "chrome" });
-
-
-
-function getParameters(str) {
-    var arr = str.split("&");
-    var obj = {};
-    var vals = arr.map((val) => { var v = val.split('='); obj[v[0]] = v[1]; return v;  });
-    return obj;
-}
+const manager = spawn(httpServerPath, [corsParam, '-p', editorPortParam], { shell: true });// { stdio: 'inherit' });
+var init = {
+    "host": host,
+    "port": port,
+    "protocol": websocketProtocol
+};
+opn(`http://${host}:${editorPortParam}/index.html#${JSON.stringify(init)}`, { app: browserParam });
 
 var server = http.createServer(function(request, response) {
     console.log((new Date()) + ' Received websocket request for ' + request.url);
@@ -50,7 +64,6 @@ var server = http.createServer(function(request, response) {
 
 server.listen(port, host);
 console.log('Listening at http://' + host + ':' + port);
-//opn("http://localhost:8080", {app:"firefox"});
 
 var wsServer = new WebSocketServer({
     httpServer: server,
@@ -65,9 +78,8 @@ var wsServer = new WebSocketServer({
 var drives = null;//[__dirname.slice(0, 2)];
 
 wsServer.on('request', function(request) {
-    var connection = request.accept('dual-protocol', request.origin);
+    var connection = request.accept(websocketProtocol, request.origin);
     console.log((new Date()) + ' Connection accepted.');
-
 
     if (!drives) {
         drivelist.list(function(error, disks) {
@@ -75,6 +87,7 @@ wsServer.on('request', function(request) {
             drives = disks.map((disk) => {
                 return disk.mountpoint;
             });
+            connection.sendUTF(JSON.stringify({ drives: drives }));
         });
     }
 
@@ -104,8 +117,11 @@ wsServer.on('request', function(request) {
                             directory.search(/\\|\//) === -1? "." : "..",
                             ...files
                         ],
-                        drives: drives,
-                        error: error
+                        //drives: drives,
+                        error: error,
+                        ".option": options,
+                        //options: options,
+                        //optionsDefaults: optionsDefaults // note: this should be sent only on init
                     }));
 
                     return;
@@ -127,6 +143,9 @@ wsServer.on('request', function(request) {
                 var selected = obj["selected"];
                 var open = obj["open"];
                 var path = obj["pathToRead"];
+                var fileToSave = obj["fileToSave"];
+                var newOptions = obj["options"];
+                var command = obj["command"];
                 var newDirectory = "";
 
                 if (selected && selected != ".") {
@@ -151,12 +170,51 @@ wsServer.on('request', function(request) {
                     }));
                 }
 
+                if (fileToSave) {
+                    fileToSave = JSON.parse(fileToSave);
+                    fs.writeFile(__dirname + "/" + fileToSave.path, fileToSave.contents, function (error) {
+                        if (error) throw error;
+
+                        connection.sendUTF(JSON.stringify({
+                            info: "file saved"
+                        }));
+                    });
+                }
+
+                if (newOptions) {
+                    console.log("options incoming", newOptions);
+                    var updatedOptions = Object.assign({}, options, newOptions);
+
+                    if (updatedOptions["websocket port"] === updatedOptions["editor port"] ||
+                        updatedOptions["websocket port"] === updatedOptions["initial project port"] ||
+                        updatedOptions["editor port"]    === updatedOptions["initial project port"]) {
+                        connection.sendUTF(JSON.stringify({
+                            error: "invalid ports",
+                            options: options
+                        }));
+                    } else {
+                        options = Object.assign(options, newOptions);
+                        fs.writeFileSync(optionsFileName, JSON.stringify(options));
+                    }
+                }
+
+                if (command) {
+                    if (command === "initialize") {
+                        connection.sendUTF(JSON.stringify({
+                            drives: drives,
+                            options: options,
+                            optionsDefaults: optionsDefaults
+                        }));
+                        sendUpdatedListing(directory);
+                    }
+                }
+
                 if (open) {
                     // serve project; each new project would get a different port
-                    spawn('node.exe ./node_modules/http-server/bin/http-server', [directory, '--cors', '-p', '8082'], { shell: true });// { stdio: 'inherit' });
-                    //spawn('cmd.exe', ['/c', `http-server ${directory} --cors -p 8082`]); //spawn('cmd.exe', ['/c', `http-server --cors -p 8081 -o`]);
+                    spawn(httpServerPath, [directory, corsParam, '-p', projectPortParam], { shell: true });// { stdio: 'inherit' });
+                    // note: would need to increment projectPortParam here
                     // open editor:
-                    opn("http://127.0.0.1:8081/editor.html", { app: "chrome" });
+                    opn(`http://${host}:${editorPortParam}/editor.html`, { app: browserParam });
                 }
             } else {
                 console.log("Didn't process Message: " + msg);
@@ -185,7 +243,7 @@ client.on('connect', function(connection) {
         console.log("Connection Error: " + error.toString());
     });
     connection.on('close', function() {
-        console.log('echo-protocol Connection Closed');
+        console.log(`${websocketProtocol} Connection Closed`);
     });
     connection.on('message', function(message) {
         if (message.type === 'utf8') {
@@ -207,14 +265,15 @@ fs.realpath(__dirname, function(err, path) {
 });
 
 manager.stdout.on('data', (data) => {
-    var str = stripAnsi(data.toString("utf8"));
-    var get = /[\s\S]*\GET \/\?([^"]*)"/g.exec(str);
-    if (get) {
-        get = get[1];
+    console.log("manager data:", data.toString("utf8"));
+    // var str = stripAnsi(data.toString("utf8"));
+    // var get = /[\s\S]*\GET \/\?([^"]*)"/g.exec(str);
+    // if (get) {
+    //     get = get[1];
 
-        //console.log(str);
-        console.log(getParameters(get));
-    }
+    //     //console.log(str);
+    //     //console.log(getParameters(get));
+    // }
 });
 
 manager.stderr.on('data', (data) => {

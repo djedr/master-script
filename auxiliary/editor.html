@@ -1,0 +1,83 @@
+<script>
+var r = 8;
+var x = 0;
+var y = 0;
+var g = 2;
+var t;
+var last;
+var c;
+
+window.onload = function () {
+	c = document.querySelector(".circle");
+	v = document.getElementById("canvas");
+	
+	c.style.width = 2 * r;
+	c.style.height = 2 * r;
+	
+	v.addEventListener('mousemove', (event) => {
+		x = (event.clientX >> g) << g;
+		y = (event.clientY >> g) << g;
+		c.style.transform = "translate(0, y - r)";
+		c.style.transform = "translate(0, x - r)";
+	});
+	
+	addEventListener('click', (event) => {
+		clearTimeout(t);
+		t = setTimeout(_ => {
+			last = c.cloneNode(true);
+			document.body.appendChild(last);
+			console.log(x, y, r);
+		}, 10);
+	});
+
+	addEventListener('keyup', (event) => {
+		console.log(event);
+		if (event.keyCode === 107) {// === '+') {
+			r += 2;
+			c.top -= 2;
+			c.left -= 2;
+		} else if (event.keyCode === 189) {// === '-') {
+			r -= 2;
+			c.top -= 2;
+			c.left -= 2;
+		} else if (event.keyCode === 81) {// === "q") {
+			g += 1;
+			console.log(g);
+		} else if (event.keyCode === 87) {// === "w") {
+			g -= 1;
+			console.log(g);
+		} else if (event.keyCode === 191) {// === '/') {
+			document.body.removeChild(last);
+		} else if (event.keyCode === 32) {// === " ") {
+			var cs = document.querySelectorAll(".circle");
+			
+			var obj = [];
+			
+			for (var i = 0; i < cs.length; ++i) {
+				obj.push({x: Number(cs[i].style.left.slice(0, -2)), y: Number(cs[i].style.top.slice(0, -2)), r: Number(cs[i].style.width.slice(0, -2)) / 2})
+			}
+			console.log(obj);
+		}
+		c.style.width = r * 2;
+		c.style.height = r * 2;
+	});
+}
+</script>
+
+<style>
+	body {
+		margin: 0;
+	}
+	.circle {
+		position: absolute;
+		background-color: #f00;
+		width: 10;
+		height: 10;
+	}
+	#canvas {
+		background: url(img.png);
+	}
+</style>
+
+<div class="circle"> </div>
+<canvas id="canvas" width="600" height="480"></canvas>

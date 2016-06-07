@@ -31,6 +31,8 @@ var rootEnv = {
     "false": false,
     "undefined": undefined,
     "is-defined": (a) => { return a !== undefined; },
+    "or": (a, b) => { return a || b; },
+    "and": (a, b) => { return a && b; },
     "not": (a) => { return !a; },
     "=": (a, b) => { return a === b; }, // Object.is?
     "<>": (a, b) => { return a !== b; }, // !Object.is?
@@ -375,7 +377,8 @@ function treeConstructor() {
     });
 }
 
-treeConstructor();
+// NOTE: this enables tree constructor:
+//treeConstructor();
 
 
 createEvent('visualise:done');
@@ -465,7 +468,8 @@ function visualiser() {
         res = node_stack.pop();
     });
 }
-visualiser();
+// NOTE: this enables the visualiser
+//visualiser();
 
 function unparse(expression, branchId) {
     var op, prefix;
@@ -814,8 +818,8 @@ function unparse_tree(tree, paths, environment) {
 function visualise_word_node(node) {
     return `
         <span class="icon symbol-icon">${node.name[0]}</span>
-        <span class="prefix">${node.prefix}</span>
-        <span class="word">${node.name}</span>
+        <span class="prefix" style="display: none">${node.prefix}</span>
+        <span class="word" title="${node.prefix}">${node.name}</span>
         <span class="postfix">${node.postfix}</span>
     `;
 }
@@ -1284,6 +1288,10 @@ specialForms["import"] = function(args, env) {
     //     console.log(result);
     // };
     // reader.readAsDataURL(path);
+    var contents;
+    while ((contents = localStorage.getItem(path)) === null) {
+
+    }
 
     var code = "";
     // rootEnv is basic functions, etc. same as in editor.ts
@@ -1294,6 +1302,9 @@ specialForms["import"] = function(args, env) {
     return modEnv;
 };
 
+// note: could easily implement global unique define
+// instead of Object.prototype.hasOwnProperty.call(env, args[0].name)
+// do env[args[0].name] === undefined
 specialFormsArgumentNames["define*"] = ["name", "value"];
 specialForms["define*"] = function(args, env) {
   if (args.length != 2 || args[0].type != "word") {
@@ -1307,7 +1318,7 @@ specialForms["define*"] = function(args, env) {
   // if value.type && value.type === "[macro]"
   //    macros[args[0].name] = value.value
   // else:
-  if (env[args[0].name] === undefined) {
+  if (Object.prototype.hasOwnProperty.call(env, args[0].name) === false) {
       env[args[0].name] = value;
   } else {
       throw new TypeError(`Can't redefine '${args[0].name}'! It is already defined!`);
@@ -1385,9 +1396,20 @@ specialForms["mutate-at-index*"] = function(args, env) {
     return { type: "[error]", message: "mutate-at-index* needs a third argument of list type" }
 };
 
+// note: this should validate
+specialForms["assign*"] = function(args, env) {
+    return Object.assign(evaluate(args[0], env, 0), evaluate(args[1], env, 1));
+};
+
 specialForms["scope*"] = function(args, env) {
     return Object.create({});
-}
+};
+
+specialForms["invoke*"] = function(args, env) {
+    return evaluate(args[0], env, 0).apply(null, args.slice(1).map((arg, i) => {
+        return evaluate(arg, env, i);
+    }));
+};
 
 specialForms["mutate-in*"] = function(args, env) {
     if (args.length != 3 || args[0].type != "word") {
@@ -1443,6 +1465,17 @@ specialForms["list"] = function (args, env) {
     return args.map((arg, i) => {
         return evaluate(arg, env, i);
     });
+};
+
+// note: this is a temporary implementation
+specialForms["dict*"] = function (args, env) {
+    var dict = {};
+
+    for (var i = 0; i < args.length; i += 2) {
+        dict[args[i].name] = evaluate(args[i+1], env, i+1);
+    }
+
+    return dict;
 };
 
 specialForms["print$"] = function(args, env) {
@@ -1650,7 +1683,7 @@ specialForms["."] = function (args, env) {
     context = evaluate(args[0], env, 0);
 
     if (!context) { // note: should verify context here to make sure that it has accessable properties
-        return error("given context has no accessable properties");
+        return error("given context has no accessable properties", [args, env]);
     }
 
     // get array at index
@@ -1726,7 +1759,7 @@ specialForms[":"] = function (args, env) {
         return setPropertyAt(0); //specialForms["mutate*"](args, env);
 
     // args > 2
-    context = specialForms["."](args.slice(-2), env);
+    context = specialForms["."](args.slice(0, -2), env);
 
     if (!context) { // note: should verify context here to make sure that it has accessable properties
         return error("given context has no accessable properties");
@@ -1771,6 +1804,8 @@ specialForms["functions*"] = function(args, env) {
     var argsList = args[0].args.length > 0? evaluate(args[0], env, 0): undefined;
     var body = args[1];
     var alternative = undefined;
+
+    // return object here { type: "[pattern function]", argsList: argsList, body: body, alternative: alternative }
 
     return function() {
         var localEnv = Object.create(env), ret;

@@ -23,3 +23,11 @@ window.addEventListener("scroll", function () {
         }
     }
 });
+
+function getParameters(str) {
+    var arr = str.split("&");
+    var obj = {};
+    var vals = arr.map((val) => { var v = val.split('='); obj[v[0]] = v[1]; return v;  });
+    return obj;
+}
+var env = Object.create(process.env);

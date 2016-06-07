@@ -5,6 +5,11 @@
     <script src="src/data-binding.ts"></script>
     <script src="src/project-manager.ts"></script>
     <style>
+        body {
+            padding: 0;
+            margin: 0;
+        }
+
         body, select, input, button {
             background-color: #242424;
             color: #e0e0e0;
@@ -32,9 +37,37 @@
         .todo::before {
             content: "todo: ";
         }
+
+        a {
+            color: #9988ee;
+        }
+        a:hover {
+            color: #aa99ff;
+        }
+        a:visited {
+            color: #8877dd;
+        }
+        a:visited:hover {
+            color: #aa99ff;
+        }
+        button:disabled {
+            background-color: #282828;
+            color: #d0d0d0;
+        }
+        input[type=number] {
+            text-align: right;
+        }
+        #top-bar {
+            background-color: #000;
+            text-align: right;
+            font-family: monospace;
+        }
     </style>
 </head>
 <body>
+    <div id="top-bar">Dual programming language project manager <img style="vertical-align: middle" src="favicon.ico"/></div>
+    <div>Double click on any path to open it<sup title="You may also press enter or space while an element is selected"><a href="#[1]">[1]</a></sup>. Click "open current path as project" to open current path in the editor.</div>
+
     <div id="test-button">TODO: move the html files to ./public or sth</div>
     <div id="test-button">TEST LOCAL STORAGE AND POST MESSAGE EVENTS</div>
     <!--<form method="post" id="main-form">-->
@@ -68,10 +101,15 @@
         </div>
         <div style="float: left;">
             <br />
-            <div>Options:</div>
-            Browser: <input type="text" value="chrome" /><br />
-            Base port: <input type="text" value="8080" /><br />
-            Base directory: <input type="text" value="" placeholder="(editor's directory)" /><br />
+            <div>Options<button>&#10554;</button></div>
+            <div>Restart required<button>&#10554;</button></div>
+            <span class="option"><span class="name">Browser</span> <input type="text" value="" /><button>&#10554;</button></span><br />
+            <span class="option"><span class="name">Websocket port</span> <input type="text" value="" /><button>&#10554;</button></span><br />
+            Base directory: <input type="text" value="" placeholder="(editor's directory)" /><button>&#10554;</button><br />
+            <br/>
+            <a href="#test">href change test</a><br/>
+            <br/>
+            <span id="options"><span class="name" style="text-transform: capitalize;"></span> <input type="text" value="" /><button>&#10554;</button><br /></span>
         </div>
         <div style="clear: both">
             <br/>
@@ -80,7 +118,11 @@
             <br />
             <button name="open-button" id="open-button" value="yes">open current path as project</button><br/>
             <button name="open-button" id="open-button" value="yes">new project</button>
-            <div id="error"></div>
+            <br/><br/>
+            <div id="error" style="color: #f88;" onchange="console.log('AAA')"></div>
+        </div>
+        <div>
+            <div id="[1]">[1] You may also press enter or space while an element is selected</div>
         </div>
     </div>
     <!--</form>-->
