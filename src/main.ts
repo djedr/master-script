@@ -596,7 +596,14 @@ function evaluate(expression, environment, branchId) { // , root/currentRoot, br
                         return expression;
                     }
                 } else { // makes op|x turn to op.x and op|x[y z x] turn to op.x(y, z, x)
-                    var property = evaluate(expression.args[0], environment, 0);
+                    var property;
+
+                    if (isNaN(expression.args[0].value) && expression.args[0].type === "word") {
+                        property = expression.args[0].name;
+                    } else {
+                        property = evaluate(expression.args[0], environment, 0);
+                    }
+
                     if (Array.isArray(op) && Number.isInteger(property)) { // apply array -- get index
                         var length = op.length, index = property;
 

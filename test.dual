@@ -338,6 +338,7 @@ bind [timeouts]
 -- temporary
 bind [pillman-r][7]
 bind [margin][8]
+bind [pill-count][0]
 
 bind [pillman]
 | dict*[
@@ -363,6 +364,11 @@ bind [pillman]
 	state-2 '|normal
 	timeout-2 0
 ]
+
+bind [pillman-blueprint]
+| dict* []
+
+assign* [pillman-blueprint pillman]
 
 bind [get-initial-game-state]
 | of![
@@ -564,6 +570,49 @@ bind [xx][10]
 
 bind [big-r][24]
 
+bind [planets][
+	.[window JSON parse][
+		html'[
+			{
+				"middle":{"x":308,"y":224,"r":30},
+				"above-middle":{"x":308,"y":144,"r":26},
+				"below-middle":{"x":308,"y":304,"r":26},
+				"above-middle-right":{"x":388,"y":144,"r":26},
+				"above-middle-left":{"x":228,"y":144,"r":26},
+				"bottom":{"x":308,"y":384,"r":26},
+				"bottom-left":{"x":228,"y":384,"r":26},
+				"bottom-right":{"x":388,"y":384,"r":26},
+				"upper":{"x":308,"y":80,"r":10},
+				"bottom-left-left":{"x":164,"y":384,"r":10},
+				"bottom-right-right":{"x":452,"y":384,"r":10},
+				"above-middle-right-right":{"x":452,"y":144,"r":10},
+				"above-middle-left-left":{"x":164,"y":144,"r":10},
+				"upper-left":{"x":252,"y":80,"r":18},
+				"upper-right":{"x":364,"y":80,"r":18},
+				"upper-right-right":{"x":428,"y":84,"r":18},
+				"upper-left-left":{"x":188,"y":84,"r":18},
+				"middle-right":{"x":380,"y":216,"r":18},
+				"middle-left":{"x":236,"y":216,"r":18},
+				"middle-left-left":{"x":180,"y":244,"r":18},
+				"middle-right-right":{"x":436,"y":244,"r":18},
+				"below-middle-right":{"x":388,"y":288,"r":18},
+				"below-middle-left":{"x":228,"y":288,"r":18},
+				"above-bottom-left-left":{"x":180,"y":332,"r":18},
+				"above-bottom-right-right":{"x":436,"y":332,"r":18},
+				"right-teleport":{"x":484,"y":244,"r":4},
+				"left-teleport":{"x":132,"y":244,"r":4}
+			}
+		]
+	]
+]
+
+bind [connections][
+	list[
+		list[planets|middle planets|above-middle]
+		list[planets|middle planets|below-middle]
+	]
+]
+
 --
 --
 -- drawing
@@ -585,13 +634,6 @@ bind [highlight-color]['|#282]
 --
 -- auxiliary drawing functions
 --
-bind [draw-lines]
-| of [ctx x y off-a off-b] [
-	.[ctx moveTo][+[x off-a] +[y off-a]]
-	.[ctx lineTo][+[x off-b] +[y off-b]]
-	.[ctx moveTo][+[x off-a] +[y off-a]]
-	.[ctx lineTo][+[x off-b] +[y off-b]]
-]!
 
 bind [draw-pillman]
 | of [ctx pillman game-state] [		
@@ -719,6 +761,65 @@ bind [draw-pillman]
 	]
 ]!
 
+bind [range]
+| of [a b] [
+	bind [i][a]
+	bind [lst][list!]
+
+	while [<[i b] do [
+		.[lst push][i]
+		mutate*[i +[i 1]]
+	]]
+	lst
+]!
+
+bind [map-side]
+| of [f lst] [
+	if [>[lst|length 0]] [
+		f[lst|0]
+		map-side[f .[lst slice][1]]
+	]!
+]!
+
+bind [draw-hud]
+| of [ctx game-state] [
+	:[ctx fillStyle text-color]
+	ctx[fillText]['[Pills: {game-state|pill-count}/{pill-count}] 10 30]
+	ctx[fillText]['[Score: {game-state|score}] 10 40]
+	ctx[fillText]['[Pills: {game-state|level}] 10 50]
+
+	if [<[game-state|lives 0]] [
+		:[ctx fillStyle game-over-color]
+		ctx[fillText]['[GAME OVER] 10 70]
+	] [
+		ctx[fillText]['[Lives: {game-state|lives}] 10 70]
+
+		map-side[
+			of [x] [
+				bind[pos][list[+[*[*[x 2.5] pillman-r] 20] 90]]
+				bind[blueprint][
+					assign* [
+						dict*!
+						pillman-blueprint
+						dict* [
+							position pos
+							planet dict* [
+								x pos|0
+								y pos|1
+								r -10
+							]
+						]
+					]
+				]
+				bind [gs][assign*[dict*! game-state dict* [mode '|on]]]
+				log[blueprint]
+				draw-pillman[ctx blueprint gs]
+			]!
+			list[0 1 2 3] -- temp
+		]
+	]
+]!
+
 --
 -- main drawing function
 --
@@ -733,11 +834,7 @@ bind [draw]
 	
 	clear [ctx]
 	
-	--:[ctx fillStyle pillman-color]
-	--:[ctx font '[50px monospace]]
-	--.[ctx fillText]['[I am become Pillman] xx 60]
-	
-	--mutate*[xx if[>[xx 100]][10][+[xx 1]]]
+	draw-hud[ctx game-state]
 	
 	
 	--:[pillman position 0 +[.[pillman position 0] 1]]
