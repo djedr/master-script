@@ -1,0 +1,48 @@
+--
+-- basic macros: implicit import
+--
+
+--define* [bind
+--    macro* [a
+--        macro* [b
+--            code'|define* [{a b}]
+--        ]
+--    ]
+--]
+bind [macro]
+| macro* [{args}
+    macro* [body
+        code'|macro* [{args body}]
+    ]
+]
+bind [if]
+| macro* [{condition} macro* [{then} macro* [{else}
+            code'|if* [{condition} do[{then}] do[{else}]]
+]]]
+            
+bind [of]
+| macro* [{args} macro* [{body} macro* [{alt}
+	       code'|functions* [args-list[{args}] do[{body}] {alt}]
+]]]
+
+bind [match]
+| macro* [{args} macro* [op
+		code'|invoke* [{op args}]
+]]
+        
+bind[i][0]       
+while [<=[i 1000] do [
+	match [i]
+    | of   [<[10]] [log['|less-than-10]]
+    | of  [<[100]] [log['|less-than-100]]
+    | of [<[1000]] [log['|less-than-1000]]
+    | of       [_] [log['[must be 1000 by now]]]
+    !
+    
+    if [=[mod[i 13] 0]] [
+    	log[i]
+    	log['[divisible by 13]]
+    ]!
+    
+    mutate*[i +[i 1]]
+]]

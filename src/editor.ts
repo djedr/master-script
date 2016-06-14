@@ -7,7 +7,8 @@ var editor,
     parsedProgram;
 
 function run_() {
-    console.log(evaluate(parsedProgram, Object.assign({}, rootEnv)));
+    console.log(evaluate(parsedProgram, Object.assign(Object.create(null), rootEnv)));
+    delete parsedProgram;
 }
 
 function parse_() {
@@ -23,8 +24,8 @@ function mark_expression(expression, start_pos, end_pos, extra) {
             { className: (extra? extra: "argument-marker"), inclusiveRight: true }//, inclusiveLeft: true, }
         );
 
-    marker.expression = expression;
-    expression.marker = marker;
+    //marker.expression = expression;
+    //expression.marker = marker;
 }
 
 function setBreakpoint(editor) {
@@ -115,10 +116,14 @@ function initializePrimitiveList() {
 
     editor_raw.setSize("40ex", "7em");
 
-    for (primitive in specialForms) {
+    for (entry in rootEnv) {
+        if (entry.type !== "[primitive]") {
+            continue;
+        }
+        var primitive = entry;
         var text = primitive,
             args = "",
-            argNames = specialFormsArgumentNames[primitive],
+            //argNames = specialFormsArgumentNames[primitive],
             i;
 
         if (argNames) {
@@ -308,7 +313,7 @@ window.addEventListener("load", function () {
             // a.download = "test.dual";
             // a.click();
 
-            localStorage.setItem("fileToSave", JSON.stringify({path: "test.dual", contents: text}));
+            localStorage.setItem("fileToSave", JSON.stringify({path: "saved.dual", contents: text}));
             //localStorage.setItem("pathToSave", "./test.dual");
 
             //window.open('data:text/x-dual;charset=utf-8,' + );
@@ -360,7 +365,7 @@ window.addEventListener("load", function () {
     });
     doc = editor.getDoc();
 
-    readTextFile("./test.dual", function (text) {
+    readTextFile("./pillman.dual", function (text) {
         setTimeout(_ => {
             // var marks = doc.getAllMarks();
             // for (var i = 0; i < marks.length; ++i) {
@@ -403,6 +408,8 @@ window.addEventListener("load", function () {
     }
 
     doc.on('cursorActivity', onCursorActivity);
+
+    rootEnv.window = document.getElementById("page").contentWindow;
 
     doc.on('beforeChange', (doc, { text, from, to, removed, origin }) => {
         var { mark, offset } = getMarkObjAt(from),

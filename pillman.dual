@@ -1,0 +1,1954 @@
+--bind [fold-right of-match [
+--	$[$[fn initial list[head {tail}]] fn[head fold-right[fn initial tail]]]
+--	$[				  $[fn initial _] initial]
+--]]
+
+bind [fold-right of [fn initial lst do[
+	bind [i 0]
+	bind [prev initial]
+	
+	while[<[i lst|length] do [
+		mutate* [prev fn[lst|@[i] prev]]
+		mutate*[i +[i 1]]
+	]]
+	$[]
+]]]
+
+bind [range of [a b do [
+	bind [$[i lst] $[a list!]]
+
+	while [<[i b] do [
+		.[lst push][i]
+		mutate* [i +[i 1]]
+	]]
+	lst
+]]]
+
+bind [map of [f lst do [
+	bind [$[i ret] $[0 list!]]
+	
+	while [<[i lst|length] do [
+		.[ret push][f[lst|@[i]]]
+		mutate* [i +[1 i]]
+	]]
+	ret
+]]]
+
+-- map that ignores the result -- only cares about side effects
+--bind [map-side of [f lst do [
+--	bind [i 0]
+--	while [<[i lst|length] do [
+--		f[lst|@[i]]
+--		mutate* [i +[1 i]]
+--	]]
+--]]]
+
+--
+-- math
+--
+bind [math .[window Math]]
+
+bind [square of [a *[a a]]]
+bind [sqrt .[math sqrt]]
+
+bind [sin .[math sin]]
+bind [cos .[math cos]]
+
+bind [pi .[math PI]]
+bind [pi*2 *[2 pi]]
+
+bind [min of [a b if [<[a  b] a b]]]
+
+
+--
+-- physics
+--
+
+bind [+vec of [a b $[+[a|0 b|0] +[a|1 b|1]]]]
+bind [-vec of [a b $[-[a|0 b|0] -[a|1 b|1]]]]
+bind [*vec of [a s $[*[a|0 s] *[a|1 s]]]]
+
+--bind [+vec of [a b do[
+--	mutate*[a $[+[a|0 b|0] +[a|1 b|1]]]
+--	a
+--]]]
+--bind [-vec of [a b do[
+--	mutate*[a $[-[a|0 b|0] -[a|1 b|1]]]
+--	a
+--]]]
+--bind [*vec of [a b do[
+--	mutate*[a $[*[a|0 b] *[a|1 b]]]
+--	a
+--]]]
+
+bind [line-circle-collision of [line circle do [
+	bind [$[d f] $[
+		-vec[.[line 1] .[line 0]]
+		-vec[.[line 0] .[circle 0]]
+	]]
+	bind [$[a b c] $[
+		+[square|.[d 0] square|.[d 1]]
+		*[2 +[*[.[f 0] .[d 0]] *[.[f 1] .[d 1]]]]
+		-[+[square|.[f 0] square|.[f 1]] square|.[circle 1]]
+	]]
+	bind [delta -[square|b *[4 *[a c]]]]
+	
+	if [>=[delta 0] do [
+		mutate* [delta sqrt[delta]]
+		
+		bind [$[t1 t2] $[
+			/[-[-#|b delta] *[2 a]]
+			/[+[-#|b delta] *[2 a]]
+		]]
+		
+		or[and[>=[t1 0] <=[t1 1]] and[>=[t2 0] <=[t2 1]]]
+	] false]
+]]]
+
+bind [circle-circle-collision of [circle-1 circle-2 do [
+	bind [$[v r] $[
+		-vec[.[circle-1 0] .[circle-2 0]]
+		+[.[circle-1 1] .[circle-2 1]]
+	]]
+	
+	<[+[square|.[v 0] square|.[v 1]] square|r]
+]]]
+
+bind [point-distance of [p1 p2 do [
+	bind [diff -vec[p1 p2]]
+	sqrt|+[square|.[diff 0] square|.[diff 1]]
+]]]
+
+--
+-- output window
+--
+--bind [iframe .[window document getElementById]['|page]]
+bind [game-window window] -- .[iframe contentWindow]]
+bind [page-div .[window document getElementById]['|page]] -- .[iframe contentWindow]]
+
+bind [set-page of [src do [
+	--:[iframe srcdoc src]
+	:[window document documentElement innerHTML src]
+]]]
+
+--
+-- game
+--
+
+-- game output
+bind  [canvas-width 600]
+bind [canvas-height 480]
+bind  [container-id '[pillman-container]]
+bind      [canvas-A '[game-canvas-A]]
+bind      [canvas-B '[game-canvas-B]]
+		
+set-page[html'[
+<!--<head>-->
+	<style>
+		body {
+			background-color: #111;
+			color: #ddd;
+            /*transform: scale(0.7) translate(-40%, -20%);*/
+		}
+
+		a {
+			color: #d99;
+		}
+
+		#info {
+			font-size: 48px;
+		}
+
+		#container {
+			width: 50%;
+			margin: auto;
+			text-align: center;
+		}
+		#{{container-id}} {
+			position: relative;
+			width: {{canvas-width}}px;
+			height: {{canvas-height}}px;
+			background-color: #010101;
+			margin: auto;
+		}
+
+		#{{canvas-B}} {
+			display: none;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+
+		#{{canvas-A}} {
+			display: block;
+			position: absolute;
+			top: 0px;
+			left: 0px;
+		}
+
+	</style>
+<!--</head>
+<body>-->
+	<div id="container">
+		<h1>Pillman</h1>
+		
+		<div id="{{container-id}}" tabindex="1">
+			<canvas id="{{canvas-A}}" width="{{canvas-width}}" height="{{canvas-height}}"></canvas>
+			<canvas id="{{canvas-B}}" width="{{canvas-width}}" height="{{canvas-height}}"></canvas>
+			<div id="info">Click this canvas to start.</div>
+		</div>
+
+		<div id="msg"></div>
+		<span>The canvas above must be focused for the keyboard input to work.</span><br />
+		<span>[SPACEBAR] controls Pillman</span><br />
+		<span>or alternatively</span><br />
+		<span>[Z] changes Pillman's direction and [X] changes Pillman's planet</span><br />
+		<br />
+		<span>[F2] restarts the game</span><br />
+		<span>[F4] snapshots the canvas</span><br />
+		<a id="download" tabindex="2" download=""></a>
+	</div>
+<!--</body>-->
+]]
+
+bind  [restart-key-code 113]
+bind [download-key-code 115]
+bind    [space-key-code 67]--[32]
+bind        [z-key-code 90]
+bind        [x-key-code 88]
+
+bind     [is-game-running false]
+bind [is-time-for-restart true]
+bind         [input-queue list!]
+bind    [initial-fps-info dict* [
+	frame-count 0
+	d-fps 0
+	avg-fps 0
+	fps-acc 0
+	lo-fps 1000000
+	hi-fps 0
+	lo-fps-frame 0
+	up-frames 0
+	down-frames 0
+]]
+
+-- simulation settings
+bind [step /[1 60]]
+bind [double-buffer false] -- note: it's off since I'm using requestAnimationFrame
+
+bind [debug false]
+
+-- game state
+bind [timeouts dict* [
+	eaten 70
+	trapped 135
+	vulnerable 380
+	transition 35
+	eat 6
+	idle 70
+	ate 35
+]]
+
+-- temporary
+bind [pillman-r    7]
+bind [ghost-r      6]
+bind [margin       0]
+bind [pill-r       2]
+bind [power-pill-r 4]
+
+bind [regular-pill-score 10]
+bind [power-pill-score   50]
+
+bind [big-r 24]
+
+bind [planets .[window JSON parse][
+	html'[
+		{
+			"middle":{"x":308,"y":224,"r":22},
+			"above-middle":{"x":308,"y":144,"r":26},
+			"below-middle":{"x":308,"y":304,"r":26},
+			"above-middle-right":{"x":388,"y":144,"r":26},
+			"above-middle-left":{"x":228,"y":144,"r":26},
+			"bottom":{"x":308,"y":384,"r":26},
+			"bottom-left":{"x":228,"y":384,"r":26},
+			"bottom-right":{"x":388,"y":384,"r":26},
+			"upper":{"x":308,"y":80,"r":10},
+			"bottom-left-left":{"x":164,"y":384,"r":10},
+			"bottom-right-right":{"x":452,"y":384,"r":10},
+			"above-middle-right-right":{"x":452,"y":144,"r":10},
+			"above-middle-left-left":{"x":164,"y":144,"r":10},
+			"upper-left":{"x":252,"y":80,"r":18},
+			"upper-right":{"x":364,"y":80,"r":18},
+			"upper-right-right":{"x":428,"y":84,"r":18},
+			"upper-left-left":{"x":188,"y":84,"r":18},
+			"middle-right":{"x":380,"y":216,"r":18},
+			"middle-left":{"x":236,"y":216,"r":18},
+			"middle-left-left":{"x":180,"y":244,"r":18},
+			"middle-right-right":{"x":436,"y":244,"r":18},
+			"below-middle-right":{"x":388,"y":288,"r":18},
+			"below-middle-left":{"x":228,"y":288,"r":18},
+			"above-bottom-left-left":{"x":180,"y":332,"r":18},
+			"above-bottom-right-right":{"x":436,"y":332,"r":18},
+			"right-teleport":{"x":484,"y":244,"r":4},
+			"left-teleport":{"x":132,"y":244,"r":4}
+		}
+	]
+]]
+
+bind [connections $[
+	$[planets|middle planets|above-middle]
+	$[planets|middle planets|below-middle]
+	$[planets|middle planets|middle-left]
+	$[planets|middle planets|middle-right]
+	$[planets|above-middle-right planets|middle-right]
+	$[planets|above-middle-left planets|middle-left]
+	$[planets|above-middle-left planets|above-middle]
+	$[planets|above-middle planets|above-middle-right]
+	$[planets|upper-right planets|above-middle-right]
+	$[planets|upper-right-right planets|above-middle-right]
+	$[planets|above-middle-right planets|above-middle-right-right]
+	$[planets|upper-right-right planets|upper-right]
+	$[planets|upper-left planets|upper]
+	$[planets|upper planets|upper-right]
+	$[planets|upper planets|above-middle]
+	$[planets|upper-left planets|above-middle-left]
+	$[planets|above-middle-left planets|upper-left-left]
+	$[planets|upper-left-left planets|upper-left]
+	$[planets|above-middle-left-left planets|above-middle-left]
+	$[planets|middle-left planets|middle-left-left]
+	$[planets|middle-left-left planets|left-teleport]
+	$[planets|middle-right-right planets|middle-right-right]
+	$[planets|middle-right-right planets|middle-right-right]
+	$[planets|right-teleport planets|middle-right-right]
+	$[planets|middle-right-right planets|middle-right]
+	$[planets|middle-right-right planets|middle-right-right]
+	$[planets|below-middle-right planets|middle-right-right]
+	$[planets|below-middle planets|bottom]
+	$[planets|bottom planets|bottom-left]
+	$[planets|bottom-right planets|bottom]
+	$[planets|below-middle-right planets|above-bottom-right-right]
+	$[planets|above-bottom-right-right planets|above-bottom-right-right]
+	$[planets|bottom-right planets|above-bottom-right-right]
+	$[planets|bottom-right-right planets|bottom-right]
+	$[planets|bottom-left planets|bottom-left-left]
+	$[planets|above-bottom-left-left planets|bottom-left]
+	$[planets|below-middle-left planets|above-bottom-left-left]
+	$[planets|below-middle-left planets|middle-left-left]
+]]
+
+-- pills
+bind [get-initial-pills procedure [map-dict-to-list* [planets of [x k zz do [
+	bind[rr-2 +[+[x|r 5] margin]]
+	
+	if [any[=[k '|middle] =[k '|left-teleport] =[k '|right-teleport]] do [
+	
+		:[x pills list!]
+		list[x list!]
+	] do [
+		bind [$[special-pill pill-range] $[list! list!]]
+		bind [$[pi*-half pi*-1.5] $[*[-#[0.5] pi] *[-#[1.5] pi]]]
+		
+		match [k
+			$['|bottom-left-left do [
+				mutate* [special-pill list[
+					to-int[+[*[sin[pi*-half] rr-2] x|x]]
+					to-int[+[*[cos[pi*-half] rr-2] x|y]]
+					1 -- power pill
+				]]
+				mutate* [pill-range range[-1.5 8.5]]
+			]]
+			$['|bottom-right-right do [
+				mutate* [special-pill list[
+					to-int[+[*[sin[pi*-1.5] rr-2] x|x]]
+					to-int[+[*[cos[pi*-1.5] rr-2] x|y]]
+					1 -- power pill
+				]]
+				mutate* [pill-range range[-7.5 2.5]]
+			]]
+			$['|above-middle-left-left do [
+				mutate* [special-pill list[
+					to-int[+[*[sin[pi*-half] rr-2] x|x]]
+					to-int[+[*[cos[pi*-half] rr-2] x|y]]
+					1 -- '|power
+				]]
+				mutate* [pill-range range[-1.5 8.5]]
+			]]
+			$['|above-middle-right-right do [
+				mutate* [special-pill list[
+					to-int[+[*[sin[pi*-1.5] rr-2] x|x]]
+					to-int[+[*[cos[pi*-1.5] rr-2] x|y]]
+					1
+				]]-- '|power
+				
+				mutate* [pill-range range[-7.5 2.5]]
+			]]
+			$[_ do [
+				mutate* [special-pill list!]
+				mutate* [pill-range range[0 12]]
+			]]
+		]
+		
+		bind [regular-pills map [of [y do [
+			bind[y/11*pi *[/[y 6] pi]]
+			$[
+				to-int[+[*[sin[y/11*pi] rr-2] x|x]]
+				to-int[+[*[cos[y/11*pi] rr-2] x|y]]
+				0 -- '|regular
+			]
+		]] pill-range]]
+		
+		bind [pills list!]
+		.[pills push][special-pill]
+		bind[i 0]
+		while [<[i regular-pills|length] do [
+			.[pills push][regular-pills|@[i]]
+			mutate*[i +[1 i]]
+		]]
+		:[x pills if [=[special-pill|length 0] regular-pills pills]]
+		$[x if [=[special-pill|length 0] regular-pills pills]]
+	]]
+]]]]]
+
+bind [initial-pills get-initial-pills!]
+
+bind [count-pills of [l do [
+	bind [$[i j sum h] $[0 0 0 list!]]
+	
+	while [<[i l|length] do [
+		mutate* [h .[l @[i]]]
+		mutate* [j 0]
+		
+		while [<[j .[h 1 length]] do [
+			mutate*[sum +[sum 1]]
+			
+			mutate*[j +[j 1]]
+		]]
+		
+		mutate*[i +[i 1]]
+	]]
+	sum
+]]]
+
+bind [pill-count -[count-pills[initial-pills] 4]]
+
+bind [pillman dict*[
+	idx 0
+	position list[100 100]
+	prev-pos $[list[100 100]]
+	planet planets|below-middle
+	angle *[2 pi]
+	dir 1
+	base-speed 0.08
+	speed 0.08
+	r pillman-r
+	next-planet planets|middle
+	state '|normal
+	timeout 0
+	state-2 '|normal
+	timeout-2 0
+]]
+
+bind [pillman-blueprint assign [dict*! pillman]]
+	
+-- immutable
+bind [generic-ghost dict* [
+	dir 1
+	position $[.[planets middle x] .[planets middle y]]
+	prev-pos $[$[.[planets middle x] .[planets middle y]]]
+	planet planets|middle
+	next-planet planets|middle
+	state '|trapped
+	timeout timeouts|trapped
+	state-2 '|normal
+	timeout-2 0
+	r ghost-r
+	was-just-eaten? false
+	eaten-postion list!
+]]
+					
+bind [roger assign[dict*! generic-ghost dict* [
+	idx 1
+	angle pi
+	base-speed 0.04
+	speed 0.04
+]]]
+
+bind [johnny assign[dict*! generic-ghost dict* [
+	idx 2
+	angle *[pi 1.6]
+	base-speed 0.034
+	speed 0.034
+]]]
+
+bind [greg assign[dict*! generic-ghost dict* [
+	idx 3
+	angle *[pi 1.2]
+	base-speed 0.03
+	speed 0.03
+]]]
+
+bind [bill assign[dict*! generic-ghost dict* [
+	idx 4
+	angle *[pi 1.4]
+	base-speed 0.034
+	speed 0.034
+]]]
+
+-- these should be immutable
+bind [roger-blueprint assign [dict*! roger]]
+bind [johnny-blueprint assign [dict*! johnny]]
+bind [greg-blueprint assign [dict*! greg]]
+bind [bill-blueprint assign [dict*! bill]]
+
+bind [get-initial-game-state procedure [
+	dict* [
+		pillman pillman
+		roger roger
+		johnny johnny
+		greg greg
+		bill bill
+		pills initial-pills
+		score 0
+		pill-count 0
+		lives 3
+		level 1
+		mode '|on
+		timeout 0
+		timeouts timeouts
+		command '|run
+	]
+]]
+	
+bind [handle-keys of [input game-state do [
+	if [>[.[input length] 0]
+		fold-right[handle-key game-state input]
+		game-state
+	]
+]]]
+	
+bind [get-next-planet of [entity connections do [
+	bind [$[i x ret] $[0 list! .[entity planet]]]
+	
+	while [<[i connections|length] do [
+		mutate*[x connections|@[i]]
+		
+		if [line-circle-collision[list[list[.[x 0 x] .[x 0 y]] list[.[x 1 x] .[x 1 y]]] list[.[entity position] .[entity r]]]
+			if [=[entity|planet x|1]
+				mutate* [ret x|0] -- return [x|0]
+				mutate* [ret x|1] -- return [x|1]
+			]
+			false
+		]
+	
+		mutate*[i +[1 i]]
+	]]
+	ret
+]]]
+	
+-- todo: fix this
+bind [is-teleporting false]
+bind [change-pillman-planet of [game-state do [
+	if [<>[.[game-state pillman next-planet] .[game-state pillman planet]] do [
+		bind [np .[game-state pillman next-planet]]
+		bind [new-planet cond [
+			$[=[np .[planets left-teleport]] do[mutate* [is-teleporting true] .[planets middle-right-right]]]
+			$[=[np .[planets right-teleport]] do[mutate* [is-teleporting true] .[planets middle-left-left]]]
+			$[true .[game-state pillman next-planet]]
+		]]
+		
+		assign [.[game-state pillman] dict* [
+			planet new-planet
+			angle +[.[game-state pillman angle] pi]
+		]]
+		
+		game-state
+	] game-state]
+]]]
+	
+bind [handle-key of [key game-state do [
+	match [key
+		$[$[=|restart-key-code =|'|down]  assign [game-state dict* [command '|restart]]]
+		$[$[=|download-key-code =|'|down] assign [game-state dict* [command '|download]]]
+		$[_ if [=[.[game-state mode] '|on] match [key
+			$[$[=|space-key-code =|'|down] do [
+				mutate* [game-state change-pillman-planet[game-state]]
+				
+				-- this will set even if not defined:
+				:[game-state pillman dir -#|.[game-state pillman dir]] -- negate[.[game-state pillman dir]]
+				mutate*[input-queue list!] -- note: this is a hack, fix this
+				game-state
+			]]
+			$[$[=|z-key-code =|'|down] do [
+				:[game-state pillman dir -#|.[game-state pillman dir]] -- negate[.[game-state pillman dir]]
+				mutate*[input-queue list!] -- note: this is a hack, fix this
+				game-state
+			]]
+			$[$[=|x-key-code =|'|down] do [
+				mutate* [game-state change-pillman-planet[game-state]]
+				mutate*[input-queue list!] -- note: this is a hack, fix this
+				game-state
+			]]
+			$[true game-state]
+		] game-state]]
+	]	
+]]]
+
+-- entity manipulation
+bind [update-ghost of [ghost game-state do[
+	bind [gpr .[ghost planet r]]
+	bind [gpx .[ghost planet x]]
+	bind [gpy .[ghost planet y]]
+	bind [trapped-ghost-rr +[/[.[planets middle r] 4] ghost-r]]
+	
+	.[ghost prev-pos push][.[ghost position]]
+	
+	bind [ghost-rr match[.[ghost state]
+		$['|trapped trapped-ghost-rr]
+		$['|transition sum[/[gpr +[1 .[ghost timeout]]] ghost-r margin]]
+		$[_ sum[gpr ghost-r margin]]
+	]]
+	
+	assign [ghost dict*[
+		planet
+			if [=[.[ghost planet] planets|left-teleport]
+				planets|middle-right-right
+			if [=[.[ghost planet] planets|right-teleport]
+				planets|middle-left-left
+				.[ghost planet]
+			]]
+		angle +[*[ghost|dir ghost|speed] ghost|angle]
+		position $[
+			+[*[ghost-rr sin[ghost|angle]] .[ghost planet x]]
+			+[*[ghost-rr cos[ghost|angle]] .[ghost planet y]]
+		]
+		next-planet get-next-planet[ghost connections]
+		timeout-2
+			if [>[ghost|timeout-2 0]
+				-[ghost|timeout-2 1]
+				.[ghost timeout-2]
+			]
+	]]
+	
+	--:[ghost planet if [=[.[ghost planet] planets|left-teleport]
+	--			planets|middle-right-right
+	--		if [=[.[ghost planet] planets|right-teleport]
+	--			planets|middle-left-left
+	--			.[ghost planet]
+	--		]]]
+	--:[ghost angle +[*[ghost|dir ghost|speed] ghost|angle]]
+	--:[ghost position $[
+	--		+[*[ghost-rr sin[ghost|angle]] .[ghost planet x]]
+	--		+[*[ghost-rr cos[ghost|angle]] .[ghost planet y]]
+	--	]]
+	--:[ghost 
+	--	next-planet get-next-planet[ghost connections]]
+	--:[ghost 
+	--	timeout-2
+	--		if [>[ghost|timeout-2 0]
+	--			-[ghost|timeout-2 1]
+	--			.[ghost timeout-2]
+	--		]]
+	
+	bind [gst .[ghost state]]
+	cond [
+		$[=[gst '|points]
+			assign [ghost dict* [
+				state '|eyes
+				timeout 240
+				speed *[3 get-current-speed[ghost|base-speed game-state]]
+
+			]]
+		]
+		$[>[.[ghost timeout] 0]
+			assign [ghost dict* [
+				timeout -[.[ghost timeout] 1]
+			]]
+		]
+		$[=[gst '|trapped]
+			assign [ghost dict* [
+				state '|transition
+				timeout .[game-state timeouts transition]
+			]]
+		]
+		$[=[gst '|transition]
+			assign [ghost dict* [
+				state .[ghost state-2]
+				timeout .[ghost timeout-2]
+				state-2 '|normal
+				timeout-2 0
+			]]
+		]
+		$[=[gst '|vulnerable]
+			assign [ghost dict* [
+				state '|normal
+				timeout 0
+				speed get-current-speed[ghost|base-speed game-state]
+			]]
+		]
+		$[=[gst '|idle]
+			assign [ghost dict* [
+				state '|normal
+				timeout 0
+			]]
+		]
+		$[true false]
+	]
+	
+	ghost	
+]]]
+
+bind [update-vulnerable-ghost of [ghost game-state do [
+	bind [pillman game-state|pillman]
+	bind [pl ghost|planet]
+	bind [npl ghost|next-planet]
+	if [<>[pl npl] do [
+		bind [target-position $[.[pillman planet x] .[pillman planet y]]]
+		if [>[point-distance[$[.[npl x] .[npl y]] target-position] point-distance[$[.[pl x] .[pl y]] target-position]]
+			assign [ghost dict* [planet ghost|next-planet angle +[ghost|angle pi]]]
+			_
+		]
+	] _]
+	
+	if [=[ghost|planet pillman|planet]
+		:[ghost dir .[pillman dir]]
+		_
+	]
+	ghost
+]]]
+
+bind [update-eyes-ghost of [ghost game-state do [
+	match [ghost|planet
+		$[=|planets|middle do [
+			reset-ghost[ghost game-state]
+		]]
+		$[=|ghost|next-planet if [>[ghost|timeout 0]
+			:[ghost timeout -[ghost|timeout 1]]
+			reset-ghost[ghost game-state]
+		]]
+		$[_ do [
+			bind [target-position $[.[planets middle x] .[planets middle y]]]
+			bind [npl .[ghost next-planet]]
+			bind [pl .[ghost planet]]
+			if [<[point-distance[$[npl|x npl|y] target-position] point-distance[$[pl|x pl|y] target-position]]
+				assign [ghost dict* [planet npl angle +[ghost|angle pi]]]
+				ghost
+			]
+		]]
+	]
+	ghost
+]]]
+
+bind [update-roger of [ghost game-state do [
+	bind [pillman game-state|pillman]
+	bind [state .[ghost state]]
+	bind [pl .[ghost planet]]
+	bind [npl .[ghost next-planet]]
+	
+	assign [ghost 
+		cond [
+			$[=[state '|normal]
+				if [=[pl npl]
+					dict*!
+				do [
+					bind [target-position $[.[pillman planet x] .[pillman planet y]]]
+					if [<[point-distance[$[npl|x npl|y] target-position] point-distance[$[pl|x pl|y] target-position]]
+						dict* [
+							planet npl
+							next-planet pl
+							angle +[pi ghost|angle]
+						]
+						dict*!
+					]
+				]]
+			]
+			$[=[state '|vulnerable] update-vulnerable-ghost[ghost game-state]]
+			$[=[state '|eyes] update-eyes-ghost[ghost game-state]]
+			$[true dict*!]
+		]
+	]
+	
+	--if [<>[pl npl] do [
+	--	bind [target-position $[.[pillman planet x] .[pillman planet y]]]
+	--	if [<[point-distance[$[npl|x npl|y] target-position] point-distance[$[pl|x pl|y] target-position]] do [
+	--		:[ghost planet npl]
+	--		:[ghost next-planet pl]
+	--		:[ghost angle +[pi ghost|angle]]
+	--	] false]
+	--] false]
+	
+	assign [ghost 
+		if [=[.[ghost planet] .[pillman planet]]
+			dict* [dir -#[pillman|dir]]
+			dict*!
+		]
+	]
+	update-ghost[ghost game-state]
+]]]
+
+bind [update-johnny of [ghost game-state do [
+	bind [pillman game-state|pillman]
+	bind [state .[ghost state]]
+	bind [pl .[ghost planet]]
+	bind [npl .[ghost next-planet]]
+	
+	assign [ghost 
+		cond [
+			$[=[state '|normal]
+				if [=[pl npl]
+					dict*!
+				do [
+					bind [target-position $[.[pillman planet x] .[pillman planet y]]]
+					bind [target-position-2 $[.[game-state greg planet x] .[game-state greg planet y]]]
+					bind [rog-pl .[game-state roger planet]]
+					if [<[point-distance[$[rog-pl|x rog-pl|y] target-position] point-distance[$[pl|x pl|y] target-position-2]]
+						dict* [
+							planet npl
+							next-planet pl
+							angle +[pi ghost|angle]
+							state '|idle
+							timeout .[game-state timeouts idle]
+							dir -#[.[ghost dir]]
+						]
+						dict*!
+					]
+				]]
+			]
+			$[=[state '|vulnerable] update-vulnerable-ghost[ghost game-state]]
+			$[=[state '|eyes] update-eyes-ghost[ghost game-state]]
+			$[true dict*!]
+		]
+	]
+	update-ghost[ghost game-state]
+]]]
+
+bind [update-greg of [ghost game-state do [
+	bind [pillman game-state|pillman]
+	bind [state .[ghost state]]
+	bind [pl .[ghost planet]]
+	bind [npl .[ghost next-planet]]
+	
+	assign [ghost 
+		cond [
+			$[=[state '|normal]
+				if [=[pl npl]
+					dict*!
+				do [
+					bind [rog-pl .[game-state roger planet]]
+					bind [target-position $[.[rog-pl x] .[rog-pl y]]]
+					bind [target-position-2 $[.[game-state pillman planet x] .[game-state pillman planet y]]]
+					if [<[point-distance[$[npl|x npl|y] target-position] point-distance[$[pl|x pl|y] target-position-2]]
+						dict* [
+							planet npl
+							next-planet pl
+							angle +[pi ghost|angle]
+							state '|idle
+							timeout .[game-state timeouts idle]
+						]
+						dict*!
+					]
+				]]
+			]
+			$[=[state '|vulnerable] update-vulnerable-ghost[ghost game-state]]
+			$[=[state '|eyes] update-eyes-ghost[ghost game-state]]
+			$[true dict*!]
+		]
+	]
+	update-ghost[ghost game-state]
+]]]
+
+bind [update-bill of [ghost game-state do [
+	bind [pillman game-state|pillman]
+	bind [state .[ghost state]]
+	bind [pl .[ghost planet]]
+	bind [npl .[ghost next-planet]]
+	
+	assign [ghost 
+		cond [
+			$[=[state '|normal]
+				if [=[pl npl]
+					dict*!
+				do [
+					bind [target-position $[.[game-state pillman position 0] .[game-state pillman position 1]]]
+					if [<[point-distance[$[npl|x npl|y] target-position] point-distance[$[pl|x pl|y] target-position]]
+						dict* [
+							planet npl
+							next-planet pl
+							angle +[pi ghost|angle]
+						]
+						dict*!
+					]
+				]]
+			]
+			$[=[state '|vulnerable] update-vulnerable-ghost[ghost game-state]]
+			$[=[state '|eyes] update-eyes-ghost[ghost game-state]]
+			$[true dict*!]
+		]
+	]
+	assign [ghost 
+		if [=[.[ghost planet] .[pillman planet]]
+			dict* [dir -#[.[game-state johnny dir]]]
+			dict*!
+		]
+	]
+	update-ghost[ghost game-state]
+]]]
+
+
+bind [update-pillman of [game-state do [
+	bind [$[pillman pillman-rr] $[
+		.[game-state pillman]
+		+[.[pillman planet r] +[pillman-r margin]]
+	]]
+	
+	.[game-state pillman prev-pos push][.[game-state pillman position]]
+	
+	assign [.[game-state pillman]
+		dict* [
+			angle +[*[.[pillman dir] .[pillman speed]] .[pillman angle]]
+			position list[
+				--to-int[+[*[+[pillman-rr .[window Math random]!] sin[.[pillman angle]]] .[pillman planet x]]] -- +*[pillman-rr sin[previous-angle] .[pillman planet x]]
+				--to-int[+[*[+[pillman-rr .[window Math random]!] cos[.[pillman angle]]] .[pillman planet y]]]
+				+[*[pillman-rr sin[.[pillman angle]]] .[pillman planet x]] -- +*[pillman-rr sin[previous-angle] .[pillman planet x]]
+				+[*[pillman-rr cos[.[pillman angle]]] .[pillman planet y]]
+			]
+			next-planet get-next-planet[pillman connections]
+		]
+	]
+	
+	cond [
+		$[       >[.[pillman timeout] 0] assign [.[game-state pillman] dict* [timeout -[.[pillman timeout] 1]]]]
+		$[  =[.[pillman state] '|normal] assign [.[game-state pillman] dict* [state '|backward timeout .[game-state timeouts eat]]]]
+		$[=[.[pillman state] '|backward] assign [.[game-state pillman] dict* [state '|normal timeout .[game-state timeouts eat]]]]
+	]
+	
+	.[game-state pillman]
+]]]
+
+bind [transform-ghost of [ghost game-state cond [
+	$[or[=[ghost|state '|normal] =[ghost|state '|idle]]
+		assign [ghost dict* [
+			state '|vulnerable
+			timeout .[game-state timeouts vulnerable]
+			speed *[0.5 get-current-speed[ghost|base-speed game-state]]
+		]]
+	]
+	$[=[ghost|state '|trapped]
+		assign [ghost dict* [
+			state-2 '|vulnerable
+			timeout-2 .[game-state timeouts vulnerable]
+		]]
+	]
+	$[_ ghost]
+]]]
+
+-- eats a pill if possible and updates the game state
+bind [get-new-pills-and-score of [game-state do [
+	bind [$[i j l pill-planet pills pill] $[
+		0
+		0 
+		.[game-state pills]
+		list!
+		list!
+		list!
+	]]
+	
+	while [<[i l|length] do [
+		mutate* [pill-planet .[l @[i]]]
+		mutate* [pills pill-planet|1]
+		
+		if [=[.[game-state pillman planet] pill-planet|0] do [
+			mutate* [j 0]
+			
+			while [<[j pills|length] do [
+				mutate* [pill .[pills @[j]]]
+				
+				if [circle-circle-collision[
+						list[list[pill|0 pill|1] pill-r]
+						list[.[game-state pillman position] pillman-r]
+					] do [
+					
+					cond [
+						$[=[pill|2 0] -- regular
+							assign [game-state dict*[
+								score +[.[game-state score] regular-pill-score]
+								pill-count +[.[game-state pill-count] 1]
+							]]
+							--:[game-state score +[.[game-state score] regular-pill-score]]
+							--:[game-state pill-count +[.[game-state pill-count] 1]]
+						]
+						$[=[pill|2 1] -- power
+							assign [game-state dict*[
+								score +[.[game-state score] power-pill-score]
+								roger transform-ghost[game-state|roger game-state]
+								johnny transform-ghost[game-state|johnny game-state]
+								greg transform-ghost[game-state|greg game-state]
+								bill transform-ghost[game-state|bill game-state]
+							]]
+							--:[game-state score +[.[game-state score] power-pill-score]]
+							--	-- todo: transform ghosts here
+						]
+						$[true false]
+					]
+					
+					.[pills splice][j 1] -- return?
+				] false] -- carry on
+				
+				mutate* [j +[j 1]]
+			]]
+		] false]
+		
+		mutate*[i +[i 1]]
+	]]
+	
+	game-state
+]]]
+
+bind [ghost-collision of [ghost game-state
+	circle-circle-collision[
+		$[.[game-state pillman position] pillman-r]
+		$[.[ghost position] ghost-r]
+	]
+]]
+
+bind [ghost-to-int of [ghost if [=[.[ghost state] '|vulnerable] 1 2]]]
+
+bind [eat-pillman of [game-state dict* [
+	mode '|eaten
+	timeout .[game-state timeouts eaten]
+	pillman assign [game-state|pillman dict* [state '|normal]]
+]]]
+
+bind [ghost-to-points of [ghost score assign [ghost dict* [
+	state '|points
+	timeout score
+	state-2 '|normal
+	timeout-2 0
+	was-just-eaten? true
+	eaten-position ghost|position
+]]]]
+
+bind [is-eat-state of [ghost or[=[ghost|state '|normal] =[ghost|state '|idle]]]]
+
+bind [get-current-speed of [base game-state +[base *[game-state|level 0.00024]]]]
+
+bind [reset-pillman of [pillman game-state assign [pillman dict* [
+	planet planets|below-middle
+	speed get-current-speed[pillman|base-speed game-state]
+	next-planet planets|below-middle
+	angle pi
+	dir 1
+	state '|normal	
+]]]]
+
+bind [reset-ghost of [ghost game-state do [
+	assign [ghost
+		dict* [
+			planet planets|middle
+			state '|trapped
+			timeout .[game-state timeouts trapped]
+			state-2 '|normal
+			timeout-2 0
+			speed get-current-speed[ghost|base-speed game-state]
+		]
+		--if [=[ghost|state '|vulnerable]
+		--	dict* [
+		--		speed get-current-speed[ghost|base-speed game-state]
+		--	]
+		--	dict*!
+		--]
+	]
+]]]
+
+bind [main-game-logic of [game-state input do [match [game-state|mode
+	$['|on do [
+		bind [ghost-score mul[
+			200
+			ghost-to-int[game-state|roger]
+			ghost-to-int[game-state|johnny]
+			ghost-to-int[game-state|greg]
+			ghost-to-int[game-state|bill]
+		]]
+		
+		assign [game-state
+			dict* [
+				pillman update-pillman[game-state]
+				roger update-roger[game-state|roger game-state]
+				johnny update-johnny[game-state|johnny game-state] 
+				greg update-greg[game-state|greg game-state] 
+				bill update-bill[game-state|bill game-state] 
+			]
+			handle-keys[input game-state]
+			-- ghost collisions
+			cond[
+				$[ghost-collision[game-state|roger game-state]
+					cond [
+						$[=[.[game-state roger state] '|vulnerable]
+							dict* [
+								roger ghost-to-points[game-state|roger ghost-score]
+								score +[game-state|score ghost-score]
+								mode '|ate
+								timeout .[game-state timeouts ate]
+							]
+						]
+						$[is-eat-state[game-state|roger] eat-pillman[game-state]]
+						$[_ dict*!]
+					]
+				]
+				$[ghost-collision[game-state|johnny game-state]
+					cond [
+						$[=[.[game-state johnny state] '|vulnerable]
+							dict* [
+								johnny ghost-to-points[game-state|johnny ghost-score]
+								score +[game-state|score ghost-score]
+								mode '|ate
+								timeout .[game-state timeouts ate]
+							]
+						]
+						$[is-eat-state[game-state|johnny] eat-pillman[game-state]]
+						$[_ dict*!]
+					]
+				]
+				$[ghost-collision[game-state|greg game-state]
+					cond [
+						$[=[.[game-state greg state] '|vulnerable]
+							dict* [
+								greg ghost-to-points[game-state|greg ghost-score]
+								score +[game-state|score ghost-score]
+								mode '|ate
+								timeout .[game-state timeouts ate]
+							]
+						]
+						$[is-eat-state[game-state|greg] eat-pillman[game-state]]
+						$[_ dict*!]
+					]
+				]
+				$[ghost-collision[game-state|bill game-state]
+					cond [
+						$[=[.[game-state bill state] '|vulnerable]
+							dict* [
+								bill ghost-to-points[game-state|bill ghost-score]
+								score +[game-state|score ghost-score]
+								mode '|ate
+								timeout .[game-state timeouts ate]
+							]
+						]
+						$[is-eat-state[game-state|bill] eat-pillman[game-state]]
+						$[_ dict*!]
+					]
+				]
+				$[_ dict*!]
+			]
+		]
+		
+		get-new-pills-and-score[game-state]
+		
+		-- levelup condition
+		if [=[game-state|pill-count pill-count]
+			assign [game-state dict* [
+				mode '|next-level
+				timeout 60
+			]]
+			_
+		]
+	]]
+	$['|eaten do [
+		if [>[game-state|timeout 0]
+			:[game-state timeout -[game-state|timeout 1]]
+			assign[game-state dict* [mode '|eaten-2 timeout 30]]
+		]
+	]]
+	$['|eaten-2 do [
+		if [>[game-state|timeout 0]
+			:[game-state timeout -[game-state|timeout 1]]
+		do [
+			assign [game-state dict* [
+				pillman reset-pillman[game-state|pillman game-state]
+				roger reset-ghost[game-state|roger game-state]
+				johnny reset-ghost[game-state|johnny game-state]
+				greg reset-ghost[game-state|greg game-state]
+				bill reset-ghost[game-state|bill game-state]
+				mode '|on
+				lives -[game-state|lives 1]
+			]]
+			
+			-- game over condition
+			if [<[game-state|lives 0]
+				:[game-state mode '|over]
+				false
+			]
+		]]
+	]]
+	$['|ate do [
+		if [>[game-state|timeout 0]
+			:[game-state timeout -[game-state|timeout 1]]
+			assign[game-state dict* [mode '|on timeout 0]]
+		]
+	]]		
+	$['|next-level if[>[game-state|timeout 0]
+		:[game-state timeout -[game-state|timeout 1]]
+		do [
+			assign [game-state dict* [mode '|next-level-2 timeout 0]]
+			mutate* [drawn 0]
+		]
+	]]
+	$['|next-level-2 do [
+		:[game-state level +[1 game-state|level]]
+		assign [game-state dict* [
+			mode '|on
+			timeout 0
+			pills get-initial-pills!
+			pill-count 0
+			pillman reset-pillman[game-state|pillman game-state]
+			roger reset-ghost[game-state|roger game-state]
+			johnny reset-ghost[game-state|johnny game-state]
+			greg reset-ghost[game-state|greg game-state]
+			bill reset-ghost[game-state|bill game-state]
+			timeouts assign [game-state|timeouts dict* [
+				trapped -[timeouts|trapped /[game-state|level 7]]
+				vulnerable -[timeouts|vulnerable /[game-state|level 7]]
+				idle -[timeouts|idle /[game-state|level 7]]
+				transition -[timeouts|transition /[game-state|level 25]]
+				eat -[timeouts|eat /[game-state|level 50]]
+			]]
+		]]
+		mutate* [drawn -4]
+		
+		-- win condition
+		if [>[game-state|level 255] :[game-state mode '|won] _]
+	]]
+	$[_ false]
+]
+	game-state
+]]]
+
+
+-- drawing aux
+bind [clear of [ctx do [
+	:[ctx fillStyle '|#000]
+	.[ctx fillRect][0 0 .[ctx canvas width] .[ctx canvas height]]
+]]]
+
+bind [fill-circle of [ctx x y r do[
+	.[ctx beginPath]!
+	.[ctx arc][x y r 0 pi*2 true]
+	.[ctx closePath]!
+	.[ctx fill]!
+]]]
+
+bind [swap-buffers of [main-canvas disp-canvas do [
+	bind [disp .[game-window document getElementById][disp-canvas]]
+	bind [main .[game-window document getElementById][main-canvas]]
+	bind [ctx .[disp getContext]['|2d]]
+	.[ctx drawImage][main 0 0]
+	
+	:[main style display '|block]
+	:[disp style display '|none]
+	
+	--clear[ctx]
+]]]
+
+--
+--
+-- drawing
+--
+-- 
+
+--
+-- colors
+--
+bind [pillman-color     '|#cc4]
+bind [pupil-color       '|#111]
+bind [eye-color         '|#ddd]
+bind [text-color        '|#ddd]
+bind [blink-color       '|#ddd]
+bind [game-over-color   '|#c66]
+bind [planet-color      '|#115]
+bind [highlight-color   '|#282]
+bind [vulnerable-color  '|#66c]
+
+--
+-- auxiliary drawing functions
+--
+
+bind [draw-ghost-eyes of[ctx ghost angle rr color inverse-scale do[
+	:[ctx fillStyle color]
+	fill-circle[
+		ctx
+		+[.[ghost planet x] *[sin[angle] +[rr 4]]]
+		+[.[ghost planet y] *[cos[angle] +[rr 4]]]
+		/[ghost-r inverse-scale]
+	]
+	fill-circle[
+		ctx
+		+[.[ghost planet x] *[sin[angle] -[rr 4]]]
+		+[.[ghost planet y] *[cos[angle] -[rr 4]]]
+		/[ghost-r inverse-scale]
+	]
+]]]
+
+bind [draw-ghost of[ctx ghost color game-state do[
+	bind [gpx .[ghost planet x]]
+	bind [gpy .[ghost planet y]]
+	bind [ghostRR      sum[.[ghost planet r] ghost-r margin]]
+	bind [ghostRR2     +[ghostRR 4.0]]
+	bind [ghostRR3     -[ghostRR 4.0]]
+	bind [bottomPartR  /[ghost-r 3.0]] -- can be constant
+	bind [b            *[/[*[0.15 sum[big-r ghost-r margin]] ghostRR] .[ghost dir]]]
+	bind [bottomAngle  -[.[ghost angle] b]]
+	bind [eyesAngle    -[.[ghost angle] *[b -#[0.1]]]]
+	bind [mouthAngle   -[.[ghost angle] *[-#[b] 0.7]]]
+	
+	redraw-planets[ctx game-state .[ghost planet] .[ghost next-planet] false]
+	
+	:[ctx fillStyle '|#000]
+	bind [pos list!]
+	while [>[.[ghost prev-pos length] 0] do [
+		mutate* [pos .[ghost prev-pos pop]!]
+		fill-circle[ctx pos|0 pos|1 +[ghost-r 2.5]]
+	]]
+	
+	-- pick a color
+	if [and[not[=[.[ghost state] '|vulnerable]] not[=[.[ghost state-2] '|vulnerable]]]
+		:[ctx fillStyle color]
+	do [
+		bind[oneFourthTimeout /[.[game-state timeouts vulnerable] 4]]
+		if [or[>[.[ghost timeout] oneFourthTimeout] >[mod[.[ghost timeout] 15] 7]]
+			:[ctx fillStyle vulnerable-color]
+			:[ctx fillStyle '|#aad]
+		]
+	]]
+	
+	-- draw different parts depending on ghost state
+	cond [
+		$[=[.[ghost state] '|points] do [
+			:[ctx fillStyle '|#88d]
+			ctx[fillText]['|{.[ghost timeout]} .[ghost position 0] .[ghost position 1]]
+		]]
+		$[=[.[ghost state] '|eyes] do [
+			if [ghost|was-just-eaten? do [
+				:[ctx fillStyle '|#000]
+				ctx[fillRect][-[.[ghost eaten-position 0] *[ghost-r 1.5]] -[.[ghost eaten-position 1] *[ghost-r 1.5]] 48 12]
+				:[ghost was-just-eaten? false]
+			] _]
+			draw-ghost-eyes[ctx ghost eyesAngle ghostRR eye-color 3]
+			draw-ghost-eyes[ctx ghost eyesAngle ghostRR pupil-color 5]
+		]]
+		-- trapped ghost is just a circle
+		$[=[.[ghost state] '|trapped] fill-circle[ctx .[ghost position 0] .[ghost position 1] ghost-r]]
+		
+		$[=[.[ghost state] '|transition] fill-circle[ctx .[ghost position 0] .[ghost position 1] ghost-r]]
+		
+		-- ghost.state == Normal || ghost.state == Vulnerable || ghost.state == Idle
+		$[true do [
+			-- draw bottom
+			fill-circle[
+				ctx
+				+[gpx *[ghostRR sin[bottomAngle]]]
+				+[gpy *[ghostRR cos[bottomAngle]]]
+				bottomPartR
+			]
+			fill-circle[
+				ctx
+				+[gpx *[ghostRR2 sin[bottomAngle]]]
+				+[gpy *[ghostRR2 cos[bottomAngle]]]
+				bottomPartR
+			]
+			fill-circle[
+				ctx
+				+[gpx *[ghostRR3 sin[bottomAngle]]]
+				+[gpy *[ghostRR3 cos[bottomAngle]]]
+				bottomPartR
+			]
+			
+			fill-circle[ctx .[ghost position 0] .[ghost position 1] ghost-r]
+			
+			-- eyes
+			draw-ghost-eyes[ctx ghost eyesAngle ghostRR eye-color 3]
+			
+			if [or[=[.[ghost state] '|normal] =[.[ghost state] '|idle]]
+				draw-ghost-eyes[ctx ghost eyesAngle ghostRR pupil-color 5]
+			do [ -- mouth (vulnerable state)
+				--ctx[beginPath]!
+				--:[ctx strokeStyle eye-color]
+				--:[ctx lineWidth 1.5]
+				--ctx[moveTo][
+				--	+[gpx *[ghostRR3 sin[mouthAngle]]]
+				--	+[gpy *[ghostRR3 cos[mouthAngle]]]
+				--]
+				--ctx[lineTo][
+				--	+[gpx *[ghostRR2 sin[mouthAngle]]]
+				--	+[gpy *[ghostRR2 cos[mouthAngle]]]
+				--]
+				--ctx[closePath]!
+				--ctx[stroke]!
+			]]
+		]]
+	]
+]]]
+
+bind [draw-pillman of [ctx pillman game-state do [	
+	bind [co .[game-state mode]] 
+	bind [xx -[.[pillman position 0] 1]]
+	bind [yy -[.[pillman position 1] 1]]
+	bind [r2 +[*[2 .[pillman r]] 5]]
+	
+	
+	:[ctx fillStyle '|#000]
+	
+	bind [pos list!]
+	--bind [alpha 1]
+	--bind [alphaFactor .[game-state pillman prev-pos length]]
+	--bind [n list![concat][.[game-state pillman prev-pos]]]
+	while [>[.[game-state pillman prev-pos length] 0] do [
+		mutate* [pos .[game-state pillman prev-pos pop]!]
+		
+		--mutate* [alpha /[alpha alphaFactor]]
+		--:[ctx globalAlpha alpha]
+		fill-circle[ctx pos|0 pos|1 +[pillman-r 1]]
+	]]
+	--:[game-state pillman prev-pos n[slice][-5]]
+	
+	--:[ctx globalAlpha 1]
+		
+	--ctx[clearRect][-[ppp|0 pillman-r] -[ppp|1 pillman-r] r2 r2]
+	
+	cond [
+	$[=[co '|eaten-2] do [ -- draw final frame of eaten animation
+		bind [x .[pillman position 0]]
+		bind [y .[pillman position 1]]
+		fill-circle[ctx x y +[pillman-r 1]]
+		
+		:[ctx lineWidth 1]
+		:[ctx strokeStyle pillman-color]
+		.[ctx beginPath]!
+		 
+		.[ctx moveTo][x -[y 3]]
+		.[ctx lineTo][x -[y 5]]
+		.[ctx moveTo][x +[y 3]]
+		.[ctx lineTo][x +[y 5]]
+		.[ctx moveTo][-[x 3] y]
+		.[ctx lineTo][-[x 5] y]
+		.[ctx moveTo][+[x 3] y]
+		.[ctx lineTo][+[x 5] y]
+		
+		.[ctx moveTo][-[x 2] -[y 2]]
+		.[ctx lineTo][-[x 4] -[y 4]]
+		.[ctx moveTo][+[x 2] +[y 2]]
+		.[ctx lineTo][+[x 4] +[y 4]]
+		.[ctx moveTo][-[x 2] +[y 2]]
+		.[ctx lineTo][-[x 4] +[y 4]]
+		.[ctx moveTo][+[x 2] -[y 2]]
+		.[ctx lineTo][+[x 4] -[y 4]]
+		
+		.[ctx closePath]!
+		.[ctx stroke]!
+	]]
+	$[true do [ -- draw regular animation or animation for being eaten
+  		bind [
+  			$[timeout total-timeout pi-fraction]
+  			if [=[.[game-state mode] '|eaten]
+  				$[
+  					.[game-state timeout]
+  					+[1 .[game-state timeouts eaten]]
+  					1
+  				]
+  				$[
+  					.[pillman timeout]
+  					+[1 .[game-state timeouts eat]]
+  					0.3
+  				]
+  			]
+  		]
+  		
+  		if [=[.[game-state mode] '|eaten]
+			fill-circle[ctx .[pillman position 0] .[pillman position 1] +[pillman-r 1]]
+			false
+		]
+		
+		bind [angle if [=[.[pillman dir] 1]
+			-[-#[.[pillman angle]] *[+[pi-fraction 0.1] pi]]
+			+[-#[.[pillman angle]] *[-[1.1 pi-fraction] pi]]
+		]]
+		
+		bind [s .[pillman state]]
+		bind [mouth-open cond [
+			$[=[s '|normal]  *[pi-fraction *[pi /[+[timeout 1] total-timeout]]]]
+			$[=[s '|backward] *[pi-fraction *[pi /[+[-[total-timeout timeout] 1] total-timeout]]]]
+			$[true 0]
+		]]		
+			
+		:[ctx fillStyle pillman-color]
+		.[ctx beginPath]!
+		
+		.[ctx moveTo][.[pillman position 0] .[pillman position 1]]
+		.[ctx arc] [
+			.[pillman position 0]
+			.[pillman position 1]
+			pillman-r
+			+[-[*[-[1 pi-fraction] pi] mouth-open] angle]
+			+[mouth-open angle]
+			false
+		]
+		.[ctx lineTo][.[pillman position 0] .[pillman position 1]]
+		
+		.[ctx closePath]!
+		.[ctx fill]!
+		
+		-- draw the eye
+		bind [c .[game-state mode]]
+		cond [
+		$[=[c '|eaten] false]
+		$[=[c '|eaten-2] false]
+		$[true do [
+			--bind [pillman-rr          +[+[.[pillman planet r] .[pillman r]] margin]]
+			--bind [tail-length   *[/[+[+[pillman-r margin] big-r] pillman-rr] 0.125]]
+			--bind [dir*length                          *[.[pillman dir] tail-length]]
+			--bind [angle-dir*length                   -[.[pillman angle] dir*length]]
+			--bind [rr+-2                                             -[pillman-rr 2]]
+			--bind [x                                             .[pillman planet x]]
+			--bind [y                                             .[pillman planet y]]
+			--bind [rr+-2*sin                           *[rr+-2 sin|angle-dir*length]]
+			--bind [rr+-2*cos                           *[rr+-2 cos|angle-dir*length]]
+			--bind [rr+-2*sin+x                                        +[rr+-2*sin x]]
+			--bind [rr+-2*cos+y                                        +[rr+-2*cos y]]
+			bind [px .[pillman position 0]]
+			bind [py .[pillman position 1]]
+			bind [pa .[pillman angle]]
+			
+			:[ctx fillStyle pupil-color]
+			--fill-circle[ctx rr+-2*sin+x rr+-2*cos+y 2]
+			fill-circle[
+				ctx 
+				+[*[5 sin[+[pi pa]]] px]
+				+[*[3 cos[+[pi pa]]] py]
+				2
+			]
+			:[ctx fillStyle eye-color]
+			fill-circle[
+				ctx 
+				+[*[5 sin[+[pi pa]]] px]
+				+[*[3 cos[+[pi pa]]] py]
+				1
+			]
+			--fill-circle[ctx rr+-2*sin+x rr+-2*cos+y 1]
+			0
+		]]]
+	]]]
+]]]
+
+bind [draw-hud of [ctx game-state do [
+	:[ctx fillStyle text-color]
+	.[ctx clearRect][10 10 100 100]
+	ctx[fillText]['[Pills: {game-state|pill-count}/{pill-count}] 10 30]
+	ctx[fillText]['[Score: {game-state|score}] 10 40]
+	ctx[fillText]['[Pills: {game-state|level}] 10 50]
+
+	if [<[game-state|lives 0] do [
+		:[ctx fillStyle game-over-color]
+		ctx[fillText]['[GAME OVER] 10 70]
+	] do [
+		ctx[fillText]['[Lives: {game-state|lives}] 10 70]
+
+		map-side[
+			of [x do [
+				bind[pos list[+[*[*[x 2.5] pillman-r] 20] 90]]
+				bind[blueprint 
+					assign [
+						dict*!
+						pillman-blueprint
+						dict* [
+							position pos
+							planet dict* [
+								x pos|0
+								y pos|1
+								r -10
+							]
+						]
+					]
+				]
+				bind [gs assign[dict*! game-state dict* [mode '|on]]]
+				draw-pillman[ctx blueprint gs]
+			]]
+			range[0 game-state|lives]
+		]
+	]]
+]]]
+
+bind [game-area-offset $[108 24]]
+
+bind [drawn 0]
+
+bind [draw-game-area of [ctx offset game-state do [
+	mutate*[drawn +[drawn 1]]
+	ctx[beginPath]!
+	:[ctx strokeStyle '|#444]
+	ctx[setLineDash][list[2 5]]
+	
+	-- could also draw the static stuff statically -- predraw on a hidden canvas, then display that every frame
+	-- draw the connections between planets
+	map-side[of [x do [
+		ctx[moveTo][
+			--to-int[+[.[window Math random]! .[x 0 x]]]
+			--to-int[+[.[window Math random]! .[x 0 y]]]
+			.[x 0 x]
+			.[x 0 y]
+		]
+		ctx[lineTo][
+			--to-int[+[.[window Math random]! .[x 1 x]]]
+			--to-int[+[.[window Math random]! .[x 1 y]]]
+			.[x 1 x]
+			.[x 1 y]
+		]
+		ctx[stroke]!
+	]] connections]
+	ctx[closePath]!
+	
+	-- draw ghost planet bottom layer
+	--:[ctx fillStyle '|#003]
+	--fill-circle[ctx +[.[window Math random]! .[planets middle x]] +[.[window Math random]! .[planets middle y]] +[.[window Math random]! *[.[planets middle r] 1.2]]]
+	--fill-circle[ctx .[planets middle x] .[planets middle y] *[.[planets middle r] 1.2]]
+	
+	-- draw the planets
+	
+	if [and[=[.[game-state mode] '|next-level] >[mod[game-state|timeout 20] 10]] 
+		:[ctx fillStyle blink-color]
+		:[ctx fillStyle planet-color]
+	]
+	
+	map-dict*[planets of [x y z
+		fill-circle[
+			ctx
+			--to-int[+[.[window Math random]! x|x]]
+			--to-int[+[.[window Math random]! x|y]]
+			--to-int[+[.[window Math random]! x|r]]
+			x|x
+			x|y
+			*[x|r 0.5]
+		]
+	]]
+	
+	-- draw ghost planet top layer
+	:[ctx fillStyle '|#226]
+	--fill-circle[ctx +[.[window Math random]! .[planets middle x]] +[.[window Math random]! .[planets middle y]] +[.[window Math random]! *[.[planets middle r] 0.8]]]
+	fill-circle[ctx .[planets middle x] .[planets middle y] *[.[planets middle r] 0.3]]
+	
+	
+	-- draw pills
+	:[ctx fillStyle pillman-color]
+	map-side[of [x do [
+		map-side[of [y do [			
+			if [=[y|2 0] -- '|regular
+				fill-circle[
+					ctx
+					y|0 -- to-int[+[.[window Math random]! y|0]]
+					y|1 -- to-int[+[.[window Math random]! y|1]]
+					pill-r
+				]
+			if [=[y|2 1] -- '|power
+				fill-circle[
+					ctx
+					y|0 -- to-int[+[.[window Math random]! y|0]]
+					y|1 -- to-int[+[.[window Math random]! y|1]]
+					power-pill-r
+				]
+				false
+			]]
+		]] x|1]
+	]] game-state|pills]
+-- ...
+]]]
+
+-- draw fps
+bind [a-fps-frames 100] -- how many frames make an average?
+bind [draw-fps of [ctx fps-info d-fps do [
+	-- note: should set color here
+	assign [fps-info dict* [frame-count +[fps-info|frame-count 1] d-fps d-fps]]
+	
+	ctx[clearRect][0 0 400 30]
+	ctx[fillText]['[FPS: {.[window Math round][d-fps]}] 10 10]
+	
+	if [>[fps-info|lo-fps d-fps]
+		assign[fps-info dict* [lo-fps d-fps lo-fps-frame -[fps-info|frame-count 1]]]
+		false
+	]
+	
+	if [<[fps-info|hi-fps d-fps]
+		assign[fps-info dict* [hi-fps d-fps]]
+		false
+	]
+	
+	assign[fps-info dict* [fps-acc +[fps-info|fps-acc d-fps]]]
+	
+	if [>[fps-info|frame-count a-fps-frames]
+		assign[fps-info dict* [avg-fps /[fps-info|fps-acc a-fps-frames] fps-acc 0 frame-count 0]]
+		false
+	]
+	
+	if [>[fps-info|avg-fps 0]
+		if [<[d-fps *[0.5 fps-info|avg-fps]]
+			assign[fps-info dict* [down-frames +[fps-info|down-frames 1]]]
+			assign[fps-info dict* [up-frames +[fps-info|up-frames 1]]]
+		]
+		assign[fps-info dict* [hi-fps 0]]
+	]
+	
+	if [=[fps-info|hi-fps 0] do [
+		ctx[fillText]['[loading data: {fps-info|frame-count}/{a-fps-frames}] 100 10]
+	] do [
+		ctx[fillText]['[highest FPS: {.[window Math round][fps-info|hi-fps]}] 100 10]
+		ctx[fillText]['[lowest FPS: {.[window Math round][fps-info|lo-fps]}] 200 10]
+	]]
+	
+	fps-info
+]]]
+
+bind [redraw-planets-queue list!]
+bind [redraw-planets of [ctx game-state curr-p next-p green do [
+	bind [args $[ctx game-state curr-p next-p green]]
+	redraw-planets-queue[push][args]
+]]]
+
+bind [redraw-planets-really of [ctx game-state curr-p next-p green do [	
+	if [and[<[point-distance[$[next-p|x next-p|y] $[curr-p|x curr-p|y]] 100] <>[game-state|mode '|next-level]] do [
+		ctx[beginPath]!
+		ctx[moveTo][
+			.[curr-p x]
+			.[curr-p y]
+		]
+		ctx[lineTo][
+			.[next-p x]
+			.[next-p y]
+		]
+		:[ctx lineWidth 5]
+		.[ctx setLineDash][list[0 0]]
+		:[ctx strokeStyle '|#000]
+		ctx[stroke]!
+		:[ctx lineWidth if [green 3 2]]
+		.[ctx setLineDash][list[3 5]]
+		:[ctx strokeStyle if [green '|#494 '|#444]]
+		ctx[stroke]!
+		ctx[closePath]!
+
+		:[ctx fillStyle planet-color]
+		fill-circle[ctx .[curr-p x] .[curr-p y] *[.[curr-p r] 0.5]]
+		fill-circle[ctx .[next-p x] .[next-p y] *[.[next-p r] 0.5]]
+		
+		:[ctx fillStyle pillman-color]
+		bind [i 0]
+		bind [p list!]
+		while [<[i .[curr-p pills length]] do [
+			mutate* [p .[curr-p pills @[i]]]
+			fill-circle[ctx .[p 0] .[p 1] if [=[p|2 0] pill-r power-pill-r]]
+			mutate*[i +[i 1]]
+		]]
+		
+		mutate* [i 0]
+		while [<[i .[next-p pills length]] do [
+			mutate* [p .[next-p pills @[i]]]
+			fill-circle[ctx .[p 0] .[p 1] if [=[p|2 0] pill-r power-pill-r]]
+			mutate*[i +[i 1]]
+		]]
+		
+		:[ctx fillStyle '|#226]
+		if [=[next-p planets|middle]
+			fill-circle[ctx .[next-p x] .[next-p y] *[.[next-p r] 0.3]]
+		if [=[curr-p planets|middle]
+			fill-circle[ctx .[curr-p x] .[curr-p y] *[.[curr-p r] 0.3]]
+			false
+		]]
+	] _]
+]]]
+
+--
+-- main drawing function
+--
+bind [pnp list[planets|middle planets|below-middle]]
+bind [conn-drawn '|none]
+bind [teleport-redraw-timer 0]
+bind [draw of [game-state last-tick now fps-info do [
+	bind[condition or[=[.[.[game-window document getElementById][canvas-A] style display] '|none] not[double-buffer]]]
+
+	bind [main-canvas if[condition canvas-A canvas-B]]
+	bind [disp-canvas if[condition canvas-B canvas-A]]
+	
+	bind [ctx .[.[game-window document getElementById][main-canvas] getContext]['|2d]]
+	
+	--clear [ctx]
+	
+	draw-hud[ctx game-state]
+	
+	if[<[drawn 2]
+		draw-game-area[ctx game-area-offset game-state]
+		false
+	]
+	
+	while [>[redraw-planets-queue|length 0] do [
+		apply[redraw-planets-really redraw-planets-queue[pop]!]
+	]]
+	
+	-- highlight the connection which pillman collides with
+	bind [next-p .[game-state pillman next-planet]]
+	bind [curr-p .[game-state pillman planet]]
+	if [or[>[point-distance[$[next-p|x next-p|y] $[curr-p|x curr-p|y]] 100] >[teleport-redraw-timer 0]] do [
+		if [=[teleport-redraw-timer 0] mutate* [teleport-redraw-timer 50] false]
+	
+		redraw-planets[ctx game-state planets|left-teleport planets|middle-left-left false]
+		redraw-planets[ctx game-state planets|right-teleport planets|middle-right-right false]
+		
+		mutate* [teleport-redraw-timer -[teleport-redraw-timer 1]]
+	] if [all[
+		--not[and[=[curr-p planets|middle-right-right] =[next-p planets|left-teleport]]]
+		--not[and[=[curr-p planets|middle-left-left] =[next-p planets|right-teleport]]]
+		<>[conn-drawn '|gre-en]
+		<>[curr-p next-p] =[.[game-state mode] '|on]
+		] do [
+		mutate*[pnp list[curr-p next-p]]
+		mutate*[conn-drawn '|green]
+		
+		redraw-planets[ctx game-state next-p curr-p true]	
+	] if [<>[conn-drawn '|gr-ay] do [
+		mutate*[conn-drawn '|gray]
+		
+		redraw-planets[ctx game-state .[pnp 0] .[pnp 1] false]	
+	] false]]]
+	:[ctx strokeStyle '|#333]
+	:[ctx lineWidth 1]
+	
+	--:[pillman position 0 +[.[pillman position 0] 1]]
+	draw-pillman[ctx pillman game-state]
+	
+	-- draw ghosts
+	draw-ghost[ctx .[game-state roger] '|#a44 game-state]
+	draw-ghost[ctx .[game-state johnny] '|#4a4 game-state]
+	draw-ghost[ctx .[game-state greg] '|#a6a game-state]
+	draw-ghost[ctx .[game-state bill] '|#6aa game-state]
+	
+	--.[.[.[game-window document getElementById][disp-canvas] getContext]['|2d] setFillColor][pillman-color]
+	--.[.[.[game-window document getElementById][disp-canvas] getContext]['|2d] fillRect][0 0 100 100]
+	
+	
+	-- calculate and draw new fpsInfo
+	bind [d-fps /[1000.0 +[-[.[window performance now]! last-tick] 1.0]]]
+	:[ctx fillStyle text-color]
+	if [debug
+		assign [fps-info draw-fps[ctx fps-info d-fps]]
+		false
+	]
+	
+	-- double buffering
+	if [double-buffer swap-buffers[main-canvas disp-canvas] false]
+
+	--log ['|drawing: -[.[window performance now]! t]]
+	fps-info
+]]]
+
+-- todo: implement missing pieces from here
+-- implement bind-in, set-in macros based on new bind* primitive; add set* primitive
+-- speed up parsing by removing all the debug stuff that gets displayed
+-- fix the error on startup, when this file is loaded
+-- tick-length for chrome: 50
+-- tick-length for firefox: 75
+bind [tick-length 50]
+bind [main-loop -- this should be update-game
+of [game-state delta last-tick fps-info now do [
+	mutate* [af async* [
+		.[window requestAnimationFrame]
+		of [rAF
+			main-loop[
+				if [=[.[game-state command] '|download] do [
+					assign [game-state dict* [command '|run]]
+				] game-state]
+				delta
+				last-tick
+				fps-info
+				rAF
+			]
+		]
+	]]
+	
+	bind [next-tick +[last-tick tick-length]]
+	bind [num-ticks 0]
+	
+	if [>[now next-tick] do [
+		bind [time-since-tick -[now last-tick]]
+		mutate* [num-ticks .[math floor][/[time-since-tick tick-length]]]
+	] false]
+		
+	bind [i 0]
+	while [<[i num-ticks] do [
+		mutate* [last-tick +[last-tick tick-length]]
+		
+		mutate* [game-state main-game-logic[game-state input-queue]]
+		mutate* [i +[i 1]]
+	]]
+
+	cond [
+		$[=[.[game-state command] '|restart] do [
+			mutate* [af async* [.[window requestAnimationFrame] update-game]]
+		]]
+		$[>[num-ticks 0] do [
+			mutate* [fps-info draw[game-state now .[window performance now]! fps-info]]
+		]]
+		$[_ false] -- don't redraw if no logic updates
+	]
+]]]
+
+bind [af 0]
+bind [update-game -- this should be (re)start-game
+procedure | do [
+	--
+	-- call main-loop with initial game state
+	-- 
+	log|'[starting the game]
+	bind [main-procedure of [now do [
+		main-loop[
+			get-initial-game-state!
+			0.0
+			now
+			initial-fps-info
+			now
+		]
+	]]]
+	mutate* [af async* [
+		.[window requestAnimationFrame]
+		main-procedure
+	]]
+]]
+
+bind [on-game-key-down of [event
+	.[input-queue push]|list[.[event keyCode] '|down]
+]]
+
+bind [on-game-key-up of [event
+	.[input-queue push]|list[.[event keyCode] '|up]
+]]
+
+
+bind [initialize-game procedure | do [
+	if [=[false is-game-running] do [
+		log|'[initializing the game]
+		bind [game-container .[game-window document getElementById][container-id]]
+		
+		async* [.[game-container addEventListener] '|keydown on-game-key-down]
+		async* [.[game-container addEventListener] '|keyup on-game-key-up]
+
+		:[.[game-window document getElementById]['|info] style display '|none]
+		
+		mutate*[is-game-running true]
+		
+		-- note: should remove event listener instead of checking is-game-running,
+		-- but in the current implementation it'll probably not work
+		-- cause
+		async*[.[c-a removeEventListener] '|focus initialize-game]
+		
+		update-game!
+	] log|'[debug: game already initialized!]]
+]]
+
+async* [.[window setTimeout] procedure [ do [
+	bind [c-a .[game-window document getElementById][canvas-A]]
+	
+	log|'|hello
+	
+	async*[.[c-a addEventListener] '|focus initialize-game]
+]] 500]

@@ -1,0 +1,36 @@
+try-bind* [list[functions] list[macro* [args body alt do[
+	log ['|alt-mac: alt]
+	code'|fun* [list[{{fargs}}] -- note: would have to add this: function- and {{}} escaping inside quote
+		do [
+			log['|args: {args} '|body: {body} '|alt: {alt}]
+			if* [try-bind* [{args} fargs]
+				{body}
+				
+				do [
+					log ['|alt: {alt} fargs {args}]
+					--bind [alternative] [invoke*[{alt} {{fargs}}]]
+					
+					if* [is-function [{alt}]
+						apply [{alt} {{fargs}}]
+						{alt}
+					]
+				]
+			]
+		]
+	]
+]]]]
+
+try-bind* [list[test] list[functions [
+	list [=|'|sth]
+	do ['|indeed]
+	functions [
+		list [=|'|sth-else]
+		do ['|almost-indeed]
+		do ['|aaa]
+	]
+]]]
+
+log[test [0]] -- should return "aaa"
+log[test ['|indeed]] -- should return "aaa"
+log[test ['|sth]] -- should return "indeed"
+log[test ['|sth-else]] -- should return "almost-indeed"

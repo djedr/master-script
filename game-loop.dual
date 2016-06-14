@@ -1,0 +1,29 @@
+
+--bind [stop-main 0]
+--bind [last-tick .[window performance now]!]
+--bind [last-render last-tick]
+--bind [tick-length 60]
+--bind [main of [now do[
+--	mutate* [stop-main async* [.[window requestAnimationFrame] main]]
+--	bind [next-tick +[last-tick tick-length]]
+--	bind [num-ticks 0]
+--	
+--	if [>[now next-tick] do [
+--		bind [time-since-tick -[now last-tick]]
+--		mutate* [num-ticks .[math floor][/[time-since-tick tick-length]]]
+--	]]
+--	
+--	queue-updates[num-ticks]
+--	render[now]
+--	mutate* [last-render now]
+--]]]
+--
+--bind [queue-updates of [num-ticks do [
+--	bind [i 0]
+--	
+--	while [<[i num-ticks] do [
+--		mutate* [last-tick +[last-tick tick-length]]
+--		update[last-tick]
+--	]]
+--]]]
+--

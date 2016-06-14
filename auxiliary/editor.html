@@ -7,21 +7,88 @@ var t;
 var last;
 var c;
 var ctx;
-var cs = [];
+var cs = {
+    "middle":{"x":308,"y":224,"r":22},
+    "above-middle":{"x":308,"y":144,"r":26},
+    "below-middle":{"x":308,"y":304,"r":26},
+    "above-middle-right":{"x":388,"y":144,"r":26},
+    "above-middle-left":{"x":228,"y":144,"r":26},
+    "bottom":{"x":308,"y":384,"r":26},
+    "bottom-left":{"x":228,"y":384,"r":26},
+    "bottom-right":{"x":388,"y":384,"r":26},
+    "upper":{"x":308,"y":80,"r":10},
+    "bottom-left-left":{"x":164,"y":384,"r":10},
+    "bottom-right-right":{"x":452,"y":384,"r":10},
+    "above-middle-right-right":{"x":452,"y":144,"r":10},
+    "above-middle-left-left":{"x":164,"y":144,"r":10},
+    "upper-left":{"x":252,"y":80,"r":18},
+    "upper-right":{"x":364,"y":80,"r":18},
+    "upper-right-right":{"x":428,"y":84,"r":18},
+    "upper-left-left":{"x":188,"y":84,"r":18},
+    "middle-right":{"x":380,"y":216,"r":18},
+    "middle-left":{"x":236,"y":216,"r":18},
+    "middle-left-left":{"x":180,"y":244,"r":18},
+    "middle-right-right":{"x":436,"y":244,"r":18},
+    "below-middle-right":{"x":388,"y":288,"r":18},
+    "below-middle-left":{"x":228,"y":288,"r":18},
+    "above-bottom-left-left":{"x":180,"y":332,"r":18},
+    "above-bottom-right-right":{"x":436,"y":332,"r":18},
+    "right-teleport":{"x":484,"y":244,"r":4},
+    "left-teleport":{"x":132,"y":244,"r":4}
+};
+var csn = [];
+var modePlanets = true;
+var conns = [
+    ["middle","above-middle"],
+    ["middle","below-middle"],
+    ["middle","middle-left"],
+    ["middle","middle-right"],
+    ["above-middle-right","middle-right"],
+    ["above-middle-left","middle-left"],
+    ["above-middle-left","above-middle"],
+    ["above-middle","above-middle-right"],
+    ["upper-right","above-middle-right"],
+    ["upper-right-right","above-middle-right"],
+    ["above-middle-right","above-middle-right-right"],
+    ["upper-right-right","upper-right"],
+    ["upper-left","upper"],
+    ["upper","upper-right"],
+    ["upper","above-middle"],
+    ["upper-left","above-middle-left"],
+    ["above-middle-left","upper-left-left"],
+    ["upper-left-left","upper-left"],
+    ["above-middle-left-left","above-middle-left"],
+    ["middle-left","middle-left-left"],
+    ["middle-left-left","left-teleport"],
+    ["middle-right-right","middle-right-right"],
+    ["middle-right-right","middle-right-right"],
+    ["right-teleport","middle-right-right"],
+    ["middle-right-right","middle-right"],
+    ["middle-right-right","middle-right-right"],
+    ["below-middle-right","middle-right-right"],
+    ["below-middle","bottom"],
+    ["bottom","bottom-left"],
+    ["bottom-right","bottom"],
+    ["below-middle-right","above-bottom-right-right"],
+    ["above-bottom-right-right","above-bottom-right-right"],
+    ["bottom-right","above-bottom-right-right"],
+    ["bottom-right-right","bottom-right"],
+    ["bottom-left","bottom-left-left"],
+    ["above-bottom-left-left","bottom-left"],
+    ["below-middle-left","above-bottom-left-left"],
+    ["below-middle-left","middle-left-left"]
+];
+var curPla;
 
 window.onload = function () {
 	c = document.querySelector(".circle");
 	v = document.getElementById("canvas");
 	ctx = v.getContext("2d");
-	
+
 	c.style.width = 2 * r + "px";
 	c.style.height = 2 * r + "px";
 	c.style.borderRadius = r + "px";
 
-	setInterval(_ => {
-
-	});
-	
 	v.addEventListener('mousemove', (event) => {
 		x = (event.clientX >> g) << g;
 		y = (event.clientY >> g) << g;
@@ -29,27 +96,62 @@ window.onload = function () {
 		// c.style.left = x - r + "px";
 		ctx.clearRect(0, 0, v.width, v.height);
 		ctx.fillStyle = "#f00";
-		for (var i = 0; i < cs.length; ++i) {
+		for (var i in cs) {
 			ctx.beginPath();
 			ctx.arc(cs[i].x, cs[i].y, cs[i].r, 0, Math.PI * 2);
 			ctx.closePath();
 			ctx.fill();
 		}
 
+        ctx.beginPath();
+        ctx.strokeStyle = "#0f0";
+
+        if (curPla) {
+            ctx.moveTo(cs[curPla].x, cs[curPla].y);
+            ctx.lineTo(x, y);
+        }
+
+        for (var j = 0; j < conns.length; ++j) {
+            var p1 = cs[conns[j][0]], p2 = cs[conns[j][1]];
+			ctx.moveTo(p1.x, p1.y);
+			ctx.lineTo(p2.x, p2.y);
+        }
+        ctx.stroke();
+        ctx.closePath();
+
+
+
 		ctx.beginPath();
 		ctx.arc(x, y, r, 0, Math.PI * 2);
 		ctx.closePath();
 		ctx.fill();
 	});
-	
+
 	addEventListener('click', (event) => {
 		clearTimeout(t);
 		t = setTimeout(_ => {
-			// last = c.cloneNode(true);
-			// document.body.appendChild(last);
-			// console.log(x, y, r);
-			var name = prompt("name");
-			cs.push({name: name, x: x, y: y, r: r});
+            if (modePlanets) {
+                var name = prompt("name");
+                csn.push(name);
+                cs[name] = {x: x, y: y, r: r};
+            } else {
+                for (var i in cs) {
+                    var xx = cs[i].x, yy = cs[i].y, rr = cs[i].r;
+
+                    if (x > xx - rr && x < xx + rr && y > yy - rr && y < yy + rr) {
+                        if (curPla) {
+                            conns.push([curPla, i]);
+                            curPla = null;
+                        } else {
+                            curPla = i;
+                        }
+                    } else {
+                        if (curPla) {
+                            curPla = null;
+                        }
+                    }
+                }
+            }
 		}, 10);
 	});
 
@@ -70,10 +172,19 @@ window.onload = function () {
 			g -= 1;
 			console.log(g);
 		} else if (event.keyCode === 68) {// === 'd') {
-			cs.pop();
+			var n = csn.pop();
+            cs[n] = null;
+            delete cs[n];
 		} else if (event.keyCode === 32) {// === " ") {
-			console.log(cs);
-		}
+            if (modePlanets) {
+                console.log(cs);
+            } else {
+                console.log(conns);
+            }
+		} else if (event.keyCode === 88) { // 'x'
+            modePlanets = !modePlanets;
+            console.log(modePlanets);
+        }
 		c.style.width = r * 2 + "px";
 		c.style.height = r * 2 + "px";
 		c.style.borderRadius = r + "px";

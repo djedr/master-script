@@ -1,0 +1,22 @@
+bind [cons]
+| of [head tail] [
+	.[tail unshift][head]
+]!
+
+bind [list-assign]
+| of [lst {lsts}] [
+	bind [ret] [list!]
+	
+	bind [i] [0]
+	
+	while [<[i lsts|length] do[
+		bind [l] [lsts|id*[i]]
+		bind [j] [0]
+		
+		while [<[j l|length] do[
+			.[ret push][l|j]
+		]]
+	
+		mutate*[i +[i 1]]
+	]]
+]!

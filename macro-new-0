@@ -1,0 +1,45 @@
+try-bind* [list[functions] list[macro* [args body alt do[
+	code'|fun* [list[{{fargs}}] -- note: would have to add this: function- and {{}} escaping inside quote
+		do [
+			if* [try-bind* [{args} fargs]
+				{body}
+				
+				do [					
+					if* [is-function [{alt}]
+						apply [{alt} {{fargs}}]
+						{alt}
+					]
+				]
+			]
+		]
+	]
+]]]]
+
+try-bind* [list [of] list [macro* [{args} macro* [{body} macro* [alt do[
+	code'|fun* [list[{{fargs}}] -- note: would have to add this: function- and {{}} escaping inside quote
+		do [
+			if* [try-bind* [list[{args}] fargs]
+				{body}
+				
+				do [					
+					if* [is-function [{alt}]
+						apply [{alt} {{fargs}}]
+						{alt}
+					]
+				]
+			]
+		]
+	]
+	--code'|functions [list[{args}] do[{body}] {alt}]
+]]]]]]
+
+try-bind* [list[test] list[
+  of [=|'|sth] ['|indeed]
+| of [=|'|sth-else] ['|almost-indeed]
+| do ['|aaa]
+]]
+
+log[test [0]] -- should return "aaa"
+log[test ['|indeed]] -- should return "aaa"
+log[test ['|sth]] -- should return "indeed"
+log[test ['|sth-else]] -- should return "almost-indeed"
