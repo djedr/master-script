@@ -144,6 +144,21 @@
         .menu div:hover {
             background-color: #333;
         }
+
+        .inline-menu {
+            display: block;
+            cursor: default;
+            position: static;
+            margin-bottom: 1em;
+        }
+
+        .inline-menu .header, .inline-menu .header:hover {
+            background-color: #181818;
+        }
+
+        #loading-indicator {
+            background-color: #300;
+        }
     </style>
 </head>
 <body style="padding: 0; margin: 0; color: #ddd">
@@ -223,19 +238,36 @@
         </tr>
         <tr class="edit-bar">
             <td rowspan="2" style="width: 16vw; background-color: #111">
-                <div style="width: 15vw; white-space: normal;">
-                    Visual scale:
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.25em';">[0.25em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.5em';">[0.5em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '0.75em';">[0.75em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '1em';">[1em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.25em';">[1.25em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.5em';">[1.5em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '1.75em';">[1.75em]</span>
-                    <span onclick="document.querySelector('.root-table').style.fontSize = '2em';">[2em]</span>
-                    <span onclick="run_()">[RUN]</span>
-                    <span onclick="parse_()">[PARSE]</span>
-                    <span onclick="document.querySelector('#visual-representation').style.display = 'none'; document.querySelector('#page').style.display = 'block';">[SHOW PAGE]</span>
+                <div id="loading-indicator">
+                    Please wait...
+                </div>
+
+                <div class="inline-menu menu"><div class="header">Examples  </div>
+                    <div title="Various small examples" onclick="loadFile_('basics.dual')">          Basics    </div>
+                    <div title="A simple brainfuck interpreter" onclick="loadFile_('brainfuck.dual')">  Brainfuck </div>
+                    <div title="A Pac-Man clone with a twist.
+                    Hint: click TOGGLE PAGE VIEW before loading this to switch to application view;
+                    it will also considerably speed up processing, which otherwise will be very slow,
+                    because of visualisation of a sizeable syntax tree by a suboptimal algorithm;
+                    " onclick="loadFile_('pillman.dual')">    Pac-Man   </div>
+                </div>
+
+                <div class="inline-menu menu"><div class="header">Options</div>
+                    <div title="Parses the source code from the text editor, caches it and immediately runs it. This is the recommended option" onclick="parse_(); run_()">       PARSE AND RUN       </div>
+                    <div title="Parses the source code from the text editor without running it. The result is cached" onclick="parse_()">     PARSE     </div>
+                    <div title="Runs the most recently parsed (cached) version of the code. Use if you want to run the application again without unnecessary parsing" onclick="run_()">       RUN       </div>
+                    <div title="Switches the right side of the editor between visual editor and application views" onclick="togglePage_()">TOGGLE PAGE VIEW </div>
+                </div>
+
+                <div class="inline-menu menu"><div class="header">Visual scale</div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '0.25em';">0.25em </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '0.5em';"> 0.5em  </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '0.75em';">0.75em </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '1em';">   1em    </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '1.25em';">1.25em </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '1.5em';"> 1.5em  </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '1.75em';">1.75em </div>
+                    <div onclick="document.querySelector('.root-table').style.fontSize = '2em';">   2em    </div>
                 </div>
             </td>
             <td class="text-editor" style="overflow: auto; max-height: 75%">

@@ -1,0 +1,181 @@
+class Shape {
+	method hello: say '[I'm a shape!]
+	method area: abstract
+}
+
+class Circle extends Shape {
+	field radius
+
+	method area: math.pi * radius^2 
+}
+
+class Rectangle extends Shape {
+	field width
+	field height
+	
+	method area: width * height
+}
+
+***
+
+for shape:
+method hello: say '[I'm a shape!]
+-- method area: abstract
+
+for circle:
+method area: math.pi * circle.radius^2
+
+area[circle]
+
+./math/pi
+
+arg concat: /
+
+./circle/radius
+
+bind/a/3
+
+if/<[a b]/log['/lesser]/log['/greater]
+
+.|circle/radius
+
+.|
+
+utils.math.pi
+.[utils math pi]
+./utils/math/pi
+utils[math][pi]
+utils|math|pi
+
+| could work like this for access:
+if op is object then
+check arg
+if word then do op.arg
+if op the do op.<op.name> then
+check if <op> has one arg, if so:
+	do op.<op.name>.<op.arg>, no matter if <op.arg> is a function or anything
+else invoke op.<op.name>[{<op.args>}]
+
+utils|math|pi
+utils|math[pi] -- could also check prefix to see if it's | -- this would guarantee that there's one arg and could signal error or warning if prefix is [
+
+fib|fact|3 -- rightmost first
+utils|math|pi -- leftmost first
+-- so order is dependent on operator type...
+
+explicit:
+utils/math/pi -> utils[math][pi]
+
+get-fun/'|fact/3 -> get-fun['|fact][3]
+
+so this / would be
+single-argument operator concatenation instead of argument concatenation
+
+a/b/c -> a[b][c]
+
+a|b/c -- then / would be roughly equivalent to ][
+
+a|b.c.d
+
+because operator evaluation is leftmost first and argument evaluation is rightmost first
+
+get-fun|'|fact/3
+get-fun|'|fact.3
+
+get-fun|'|fact\3
+
+a|b\c
+
+utils|math\pi
+
+game-state|pillman\position\0
+
+game-state|pillman\position[i]
+
+so \ also quotes? or converts word to string
+
+game-state|'|pillman\position[i]
+
+game-state|@[name]\position\@[i]
+
+could also check prefix -- most concise
+
+game-state[name]\position[i]
+
+JS:
+game_state[name].position[i]
+
+log['[hoho]]
+
+log\hoho
+
+game-state\pillman\position[i] -> game-state['|pillman]['|position][i]
+
+if next = \
+	get single word-arg, wrap in string
+	
+if next = \
+
+if next = .
+
+expression = {
+	apply
+	"."
+	args: [expression]
+}
+
+get one word-arg
+
+a.b -> .[a b]
+
+a.b.c -> .[a b c]
+
+expression = {
+	apply
+	"."
+	args: [expression]
+}
+
+arg = parseExpression(...)
+
+trimspace
+
+if next char = .
+	discard
+get arg
+
+else
+get one word-arg
+
+
+
+parseExpression can't know about .
+
+name.
+
+parseApply looks at last character in op name
+	if it's . then access mode
+then it does the usual (skips space, peeks next char)
+	if it's . then access mode
+	
+if access mode
+	then get arg
+	if word then
+		check last character in name
+		if ., discard it and get next arg (continue loop)
+	else
+		error
+	skip space
+	if next char is . then discard and get next arg (loop)
+	else finish getting args
+	
+
+( invokes the infix parser
+) matching ends the infix parser
+
+infix parser transforms infix exprs into prefix exprs
+	shunting yard
+
+(a bind 3)
+
+must know arity

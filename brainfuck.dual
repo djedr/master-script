@@ -1,0 +1,103 @@
+-- a simple Brainfuck interpreter
+-- ported from https://gist.github.com/diogofsr/1269093/a1cc6aa28fa6917cb2dc7c4b41f142610f0940fc
+-- note: this implementation introduces a syntax change to avoid escaping characters:
+-- the characters [ and ] are replaced by ( and )
+-- anything that is outputed is concatenated to an output string (initially empty) and then the string is logged to the JavaScript console
+-- input is taken from the program source (a character following ,)
+
+bind [*number-of-cells* 30000]
+
+bind [match-forward of [ip instructions do [
+	-- searches for a matching ) forward
+	bind [level 0]
+	bind [ret -1]
+	while [<[ip strlen[instructions]] do [
+		match [str@[instructions ip]
+			$['|( mutate* [level +[1 level]]] 
+			$['|) mutate* [level -[level 1]]]
+			$[_ _]
+		]
+		
+		if [=[level 0] do [
+			mutate* [ret ip]
+			mutate* [ip strlen[instructions]] -- terminate loop
+		] _]
+		
+		mutate* [ip +[1 ip]]
+	]]
+	ret
+]]]
+
+bind [match-backward of [ip instructions do [
+	-- searches for a matching ( backwards
+	bind [level 0]
+	bind [ret -1]
+	while [>=[ip 0] do [
+		match [str@[instructions ip]
+			$['|( mutate* [level -[level 1]]]
+			$['|) mutate* [level +[1 level]]]
+			$[_ _]
+		]
+		
+		if [=[level 0] do [
+			mutate* [ret ip]
+			mutate* [ip -1] -- terminate loop
+		] _]
+		
+		mutate* [ip -[ip 1]]
+	]]
+	ret
+]]]
+
+bind [range-set of [a b v do [
+	bind [i 0]
+	bind [lst list!]
+	
+	while [<[i b] do [
+		lst[push][v]
+	
+		mutate* [i +[i 1]]
+	]]
+	
+	lst
+]]]
+
+bind [program-loop of [program do [
+	-- the main loop
+	bind [data range-set[0 *number-of-cells* 0]]
+	log [data]
+	bind [dp 0]
+	bind [ip 0]
+	bind [instructions program]
+	bind [output '!]
+	
+	while [<[ip strlen[instructions]] do [
+		match [str@[instructions ip]
+			$['|> mutate* [dp +[1 dp]]]
+			$['|< mutate* [dp -[dp 1]]]
+			$['|+ :[data @[dp] +[1 data|@[dp]]]]
+			$['|- :[data @[dp] -[data|@[dp] 1]]]
+			$['|. do [
+				mutate* [output +[output .[window String fromCharCode][data|@[dp]]]]
+				log [output]
+			]]
+			$['|, do [
+				mutate* [ip +[1 ip]]
+				:[data @[dp] str@[instructions ip]]
+			]]
+			$['|( if [=[0 data|@[dp]] mutate* [ip match-forward[ip instructions]] _]]
+			$['|) if [<>[0 data|@[dp]] mutate* [ip match-backward[ip instructions]] _]]
+		]
+		mutate* [ip +[1 ip]]
+	]]
+]]]
+
+bind [exec of [program do [
+	-- executes PROGRAM, a string representing a brainfuck program
+	program-loop[program]
+]]]
+
+-- example program: prints "Hello World!
+-- note the use of ( and ) instead [ and ]
+log[exec['[++++++++(>++++(>++>+++>+++>+<<<<-)>+>+>->>+(<)<-)>>.>---.+++++++..+++.>>.<-.<.+++.------.--------.>>+.>++.]]]
+

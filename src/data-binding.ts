@@ -97,6 +97,7 @@ function bindData(binding, data, key = 0) {
 
 function bindClone(binding, item, i, blueprint, clones, parent) {
     var newNode;
+    // FIXME: the blueprint should be first cloned, then the data should be bound to the copy, not the other way around
     bindData(binding, item, i);
     newNode = blueprint.cloneNode(true);
     newNode.id += '[' + i + ']';

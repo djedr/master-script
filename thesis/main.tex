@@ -1,0 +1,54 @@
+\documentclass[a4paper,12pt,twoside]{book}
+
+\usepackage{praca_dyplomowa}
+
+\makeglossaries
+%\input{glossary_entries}
+
+\author{Dariusz Jędrzejczak}
+\title{Dual: a web-based, Pac-Man-complete hybrid text and visual programming language}
+
+
+\begin{document}
+\frontmatter
+\input{0_strona_tytulowa}
+
+%\input{abstract}
+
+\chapter*{Dedication}
+\textit{Justynce.}
+
+\chapter*{Acknowledgements}
+Sincere thank you for help, advice, support, patience and understanding to everybody who was on this ride with me.
+
+In particular:
+James Cheney, Sam Lindley, and Jan Stolarek.
+
+Also my family, friends and girlfriend, all the gamedev and functional programming communities of the Internet and everybody whom I forgot to mention.
+
+\tableofcontents
+
+\mainmatter
+\pagestyle{headings}
+%\input{1_wstep}
+%\input{4_narzedzia}
+%\input{2_teoria}
+%\input{5_badania}
+%\input{5_1_benchmark}
+%\input{6_podsumowanie}
+
+\bibliographystyle{plain}
+%\bibliography{bibliografia}
+
+\printglossaries
+
+\appendix
+\renewcommand{\chaptermark}[1]{%
+\markboth{\MakeUppercase{%
+APPENDIX \thechapter.%
+\ }}{}}
+%\input{app_attached_files}
+
+\listoffigures
+
+\end{document}

@@ -29,6 +29,7 @@ function listenEvent(name, listener) {
         eventListeners[name] = [];
     }
     eventListeners[name].push(listener);
+    return listener;
 }
 
 function unlistenEvent(name, listener) {

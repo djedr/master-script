@@ -16,6 +16,48 @@ function parse_() {
     editor.refresh();
 }
 
+function loadFile_(name) {
+    readTextFile("./" + name, function (text) {
+        setTimeout(_ => {
+            doc.off('cursorActivity', onCursorActivity);
+            doc.replaceRange(text, {line:0, ch:0}, {line:10000, ch:0});
+            setTimeout(_ => {
+                parse_();
+                doc.on('cursorActivity', onCursorActivity);
+                editor.refresh();
+                hideLoading_();
+            }, 1000);
+        }, 1000);
+    });
+
+}
+
+// todo: deglobalize this and others
+var loadingIndicator;
+var pageFrame;
+var visualFrame;
+
+function togglePage_() {
+    if (pageFrame.style.display === 'block') {
+        visualFrame.style.display = 'block';
+        pageFrame.style.display = 'none';
+        visualiser.listen();
+        parse_();
+    } else {
+        visualFrame.style.display = 'none';
+        pageFrame.style.display = 'block';
+        visualiser.unlisten();
+    }
+}
+
+function showLoading_() {
+    loadingIndicator.style.display = "block";
+}
+
+function hideLoading_() {
+    loadingIndicator.style.display = "none";
+}
+
 function mark_expression(expression, start_pos, end_pos, extra) {
     var marker =
         doc.markText(
@@ -24,8 +66,8 @@ function mark_expression(expression, start_pos, end_pos, extra) {
             { className: (extra? extra: "argument-marker"), inclusiveRight: true }//, inclusiveLeft: true, }
         );
 
-    //marker.expression = expression;
-    //expression.marker = marker;
+    marker.expression = expression;
+    expression.marker = marker;
 }
 
 function setBreakpoint(editor) {
@@ -117,23 +159,23 @@ function initializePrimitiveList() {
     editor_raw.setSize("40ex", "7em");
 
     for (entry in rootEnv) {
-        if (entry.type !== "[primitive]") {
-            continue;
-        }
+        // if (!rootEnv[entry] || rootEnv[entry].type !== "[primitive]") {
+        //     continue;
+        // }
         var primitive = entry;
         var text = primitive,
             args = "",
             //argNames = specialFormsArgumentNames[primitive],
             i;
 
-        if (argNames) {
-            for (i = 0; i < argNames.length; ++i) {
-                args += `_${argNames[i]} `;
-            }
-            args = args.slice(0, -1);
-        } else {
+        // if (argNames) {
+        //     for (i = 0; i < argNames.length; ++i) {
+        //         args += `_${argNames[i]} `;
+        //     }
+        //     args = args.slice(0, -1);
+        // } else {
             args += `_`;
-        }
+        // }
         text += `[${args}]`;
 
         hints.push({ text: text, displayText: primitive });
@@ -243,6 +285,22 @@ function getMarkObjAt(position, offset = 0) {
     return { mark, offset };
 }
 
+function onCursorActivity(doc) {
+    var mark = getMarkObjAt(doc.getCursor()).mark;
+
+    if (currentlySelectedExpression) {
+        currentlySelectedExpression.style.opacity = "1";
+        currentlySelectedExpression.expression.marker.css = "";
+        currentlySelectedExpression.expression.marker.changed();
+
+        currentlySelectedExpression = mark.expression.node;
+        currentlySelectedExpression.style.opacity = "0.5";
+    }
+
+    mark.css = "opacity: 1; background-color: rgba(255, 255, 255, 0.1)";
+    editor.refresh();
+}
+
 window.addEventListener('message', function(event) {
     if (event.origin === "http://127.0.0.1:8081") {
 	   console.log("\n\n\n\n\nMESSAGE:", event.data, "/MESSAGE\n\n\n\n\n");
@@ -267,6 +325,10 @@ worker.port.postMessage("editor worker");
 
 window.addEventListener("load", function () {
     var consoleInput = document.querySelector("#console-input");
+
+    loadingIndicator = document.querySelector('#loading-indicator');
+    pageFrame = document.querySelector('#page');
+    visualFrame = document.querySelector('#visual-representation');
 
     if (window.self !== window.top) {
         document.head.innerHTML = `<meta http-equiv="content-type" content="text/html; charset=UTF-8">`;
@@ -365,7 +427,7 @@ window.addEventListener("load", function () {
     });
     doc = editor.getDoc();
 
-    readTextFile("./pillman.dual", function (text) {
+    readTextFile("./brainfuck.dual", function (text) {
         setTimeout(_ => {
             // var marks = doc.getAllMarks();
             // for (var i = 0; i < marks.length; ++i) {
@@ -379,6 +441,7 @@ window.addEventListener("load", function () {
                 parse_();
                 doc.on('cursorActivity', onCursorActivity);
                 editor.refresh();
+                hideLoading_();
             }, 1000);
             // editor.refresh();
         }, 1000);
@@ -390,22 +453,6 @@ window.addEventListener("load", function () {
     var expr;
     var from_index;
     var to_index;
-
-    function onCursorActivity(doc) {
-        var mark = getMarkObjAt(doc.getCursor()).mark;
-
-        if (currentlySelectedExpression) {
-            currentlySelectedExpression.style.opacity = "1";
-            currentlySelectedExpression.expression.marker.css = "";
-            currentlySelectedExpression.expression.marker.changed();
-
-            currentlySelectedExpression = mark.expression.node;
-            currentlySelectedExpression.style.opacity = "0.5";
-        }
-
-        mark.css = "opacity: 1; background-color: rgba(255, 255, 255, 0.1)";
-        editor.refresh();
-    }
 
     doc.on('cursorActivity', onCursorActivity);
 
@@ -446,12 +493,16 @@ window.addEventListener("load", function () {
         console.log('event:', event);
 
         start_stack.push(event.character_index);
+
+        showLoading_("parsing");
     });
     listenEvent('parse:done', (event) => {
         // wrap up markers
         mark_expression(event.expression, start_stack.pop(), event.character_index);
+        currentlySelectedExpression = event.expression.node;
         console.log('parse:done');
         parsedProgram = event.expression;
+
         // doc.posFromIndex(event.character_index)
     });
     listenEvent('parse:apply-start', (event) => {
@@ -480,6 +531,11 @@ window.addEventListener("load", function () {
     });
     // ... listen to parse:...
     // make parser supply the events with string positions?
+
+
+    listenEvent('visualise:start', (event) => {
+        showLoading_("visualising");
+    });
 
     // TODO: make this sensible
     listenEvent('visualise:done', (event) => {
@@ -523,27 +579,4 @@ window.addEventListener("load", function () {
     // initialize markers accordingly
 
     initializePrimitiveList();
-
-    editor.on('keypress', function (instance, event) {
-        var i;
-
-        console.log(event);
-        switch (event.charCode) {
-        case 91: // [
-            // var doc = editor.getDoc();
-            // var cursor = doc.getCursor();
-            // doc.replaceSelection('[]');
-            // event.preventDefault();
-            // var marker =
-            //     doc.markText(cursor, {line: cursor.line, ch: cursor.ch + 2}, { css: "background-color: rgba(255, 255, 255, 0.2)" });
-            // marker.path = "./0/1/3//" + Math.random();
-            // marker.on('beforeCursorEnter', function () {
-            //     console.log(marker.path);
-            // });
-            break;
-        default:
-            // execute_and_visualise();
-            break;
-        }
-    });
 });

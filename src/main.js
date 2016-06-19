@@ -176,12 +176,20 @@ function bindNames(args, values, env) {
 }
 
 function quote(expression, env, quoteOp = "") {
-    var args = expression.args, arg;
+    var args = expression.args
+    var arg;
+    var op;
     var newArgs = [];
     var isModified = false;
     var innerArgs;
     var innerOp;
     var meta;
+
+    // TODO: make substituting operator work ({op}[args], {op}|arg, {op}!)
+    op = expression.operator.operator;
+    if (op && op.type === "meta") {
+        throw new TypeError(`Error in ⟨${unparse(expression)}⟩. Substituting an operator is not allowed! Try using apply or escaping any invocation characters.`);
+    }
 
     for (var j = 0; j < args.length; ++j) {
         arg = args[j];
@@ -192,6 +200,14 @@ function quote(expression, env, quoteOp = "") {
             case "apply":
                 if (arg.operator.type === "meta") {
                     innerArgs = arg.args;
+
+                    // note: this inserts whitespace preceding { back into the string
+                    // todo: work with html' and code'
+                    // for code' it'll be quite different -- the whitespace will have to be inserted as a prefix to the first expression evaluated inside {}
+                    if (quoteOp === "'" || quoteOp === "html'") {
+                        newArgs.push(arg.prefix.slice(0, -1));
+                    }
+
                     if (quoteOp === "html'") { // html' uses {{}} for substitution
                         if (innerArgs.length !== 1) {
                             newArgs.push(quote(arg, env, quoteOp));
@@ -212,6 +228,7 @@ function quote(expression, env, quoteOp = "") {
                             break;
                         }
                     }
+
                     meta = evaluate(arg, env).value;
                     isModified = true;
                     for (var k = 0; k < meta.length; ++k) {
@@ -287,10 +304,13 @@ function whileOp(expr, env) {
         throw { type: "[error]", message: "while expression needs 2 arguments: condition and body", data: [expr] };
     }
 
-    while (evaluate(args[0], env) !== false)
-        evaluate(args[1], env);
+    var value = false;
 
-    return false; // null
+    while (evaluate(args[0], env) !== false) {
+        value = evaluate(args[1], env);
+    }
+
+    return value;
 }
 
 function doOp(expr, env) {
@@ -394,8 +414,8 @@ function importOp(expr, env) {
 function mutateOp(expr, env) {
     var args = expr.args;
     if (args.length != 2 || args[0].type != "word") {
-        console.log("define.args != 2 or args[0].type != word");
-        return null;
+        console.log("mutate.args != 2 or args[0].type != word");
+        throw new TypeError("mutate.args != 2 or args[0].type != word")
     }
 
     var value = evaluate(args[1], env), scope = env;
@@ -451,14 +471,14 @@ function bindOp(expr, env) {
 
 function ofOp(expr, env) {
     var args = expr.args;
-    if (args.length !== 2) {
-        var message = `function must have an argument or (possibly empty) list of arguments and a body! ${unparse(expr)}`;
+    if (args.length < 1) {
+        var message = `function must have a body! ${unparse(expr)}`;
         console.log(message);
         throw { type: "[error]", message: message, data: [expr, env]};
     }
 
-    var funArgs = args[0].type === "word"? [args[0]]: args[0].args;
-    var funBody = args[1];
+    var funArgs = args.slice(0, -1); //args[0].type === "word"? [args[0]]: args[0].args;
+    var funBody = args[args.length - 1];
 
     // return object here { type: "[pattern function]", argsList: argsList, body: body, alternative: alternative }
 
@@ -491,8 +511,8 @@ function funOp(expr, env) {
     delete expr;
 
     return function(...valArgs) {
-        // if (valArgs.length !== args.length - 1)
-        //     throw new TypeError("Wrong number of arguments");
+        if (valArgs.length !== args.length - 1)
+            throw new TypeError("Wrong number of arguments");
 
         var localEnv = Object.create(env);
 
@@ -775,6 +795,7 @@ var rootEnv = Object.assign(Object.create(null), {
     "undefined": undefined,
     "is-defined": (a) => { return a !== undefined; },
     "is-function": (a) => { return typeof a === "function"; },
+    "typeof": (a) => { return typeof a; },
     "or": (a, b) => { return a || b; },
     "any": (...args) => {
         for (var i = 0; i < args.length; ++i) {
@@ -842,7 +863,15 @@ var rootEnv = Object.assign(Object.create(null), {
     "delete*": (obj, prop) => { delete obj[prop]; },
     "debug*": (label) => { debugger; return null; },
     "map-side": mapSide,
-    "assign": (...args) => { return Object.assign(...args); }
+    "assign": (...args) => { return Object.assign(...args); },
+    "(left-bracket)": "[",
+    "(right-bracket)": "]",
+    "(left-brace)": "{",
+    "(right-brace)": "}",
+    "(pipe)": "|",
+    "(bang)": "!",
+    "strlen": (str) => { return str.length; },
+    "str@": (str, i) => { return str[i]; }
 });
 
 function separate(expression_string) {
@@ -960,13 +989,19 @@ function parseApply(expression, expression_string, character_index, parent) {
 
         emitEvent('parse:apply-start', { expression: expression, character_index: character_index_cached });
 
+        // var comment = null;
         if (openingCharacterIndex < 2) { // multiple args
             while (expression_string[0] !== closingCharacter) {
                 emitEvent('parse:argument-start', { character_index: argument_start_index });
 
                 arg = parseExpression(separator_cached, expression_string, character_index, expression);
 
+                // if arg.type === "comment"/"doc"
+                //  comment = arg // emit comment?
+                // else {
+                //  arg.comment = comment
                 expression.args.push(arg.expression);
+                // }
 
                 emitEvent('parse:argument-end', { expression: arg.expression, character_index: arg.character_index });
 
@@ -1057,7 +1092,7 @@ function parseExpression(prefix, expression_string, character_index, parent) {
         expression_string = expression_string.slice(match[0].length);
     } else if (match = /^{/.exec(expression_string)) {
         expression = Object.assign(Object.create(null), { type: "meta" });
-        expression_string = original_expression_string;
+        expression_string = prefix + original_expression_string;
     } else {
         emitEvent('parse:error', {
             message: 'unrecognized characters [code 2]',
@@ -1181,13 +1216,13 @@ function treeConstructor() {
 // NOTE: this enables tree constructor:
 //treeConstructor();
 
-
-createEvent('visualise:done');
-
-function visualiser() {
+function getVisualiser() {
     var res, i, i_stack, node_stack;
 
-    listenEvent('parse:initialize', (event) => {
+    createEvent('visualise:done');
+    createEvent('visualise:start');
+
+    var visualiseParseInitialize = (event) => {
         i = event.id || 0;
         i_stack = [];
         node_stack = [];
@@ -1196,14 +1231,14 @@ function visualiser() {
         res.className = "root-table";
         res.appendChild(document.createElement("tbody"));
         //console.log(event);
-    });
-
-    listenEvent('parse:done', (event) => {
+        emitEvent('visualise:start');
+    };
+    var visualiseParseDone = (event) => {
         emitEvent('visualise:done', { result: res });
         console.log('visualise result:', res);
-    });
+    };
 
-    listenEvent('parse:apply-start', (event) => {
+    var visualiseParseApplyStart = (event) => {
         node_stack.push(res);
 
         var node = document.createElement("tr");
@@ -1232,13 +1267,13 @@ function visualiser() {
 
         i_stack.push(i);
         i = 0;
-    });
+    };
 
-    listenEvent('parse:argument-start', (event) => {
+    var visualiseParseArgumentStart = (event) => {
         node_stack.push(res);
-    });
+    };
 
-    listenEvent('parse:argument-end', (event) => {
+    var visualiseParseArgumentEnd = (event) => {
         if (event.expression.type === `word`) {
             var node = document.createElement("tr");
             node.className = "argument-row";
@@ -1262,15 +1297,40 @@ function visualiser() {
 
         ++i;
         res = node_stack.pop();
-    });
+    };
 
-    listenEvent('parse:apply-end', (event) => {
+    var visualiseParseApplyEnd = (event) => {
         i = i_stack.pop();
         res = node_stack.pop();
-    });
+    };
+
+    function listen() {
+        listenEvent('parse:initialize', visualiseParseInitialize);
+        listenEvent('parse:done', visualiseParseDone);
+        listenEvent('parse:apply-start', visualiseParseApplyStart);
+        listenEvent('parse:argument-start', visualiseParseArgumentStart);
+        listenEvent('parse:argument-end', visualiseParseArgumentEnd);
+        listenEvent('parse:apply-end', visualiseParseApplyEnd);
+    }
+
+    function unlisten() {
+        unlistenEvent('parse:initialize', visualiseParseInitialize);
+        unlistenEvent('parse:done', visualiseParseDone);
+        unlistenEvent('parse:apply-start', visualiseParseApplyStart);
+        unlistenEvent('parse:argument-start', visualiseParseArgumentStart);
+        unlistenEvent('parse:argument-end', visualiseParseArgumentEnd);
+        unlistenEvent('parse:apply-end', visualiseParseApplyEnd);
+    }
+
+    return {
+        listen: listen,
+        unlisten: unlisten
+    }
 }
-// NOTE: this enables the visualiser
-//visualiser();
+var visualiser = getVisualiser();
+
+// NOTE: this enables the visualiser:
+visualiser.listen();
 
 function unparse(expression, branchId) {
     var op, prefix;
@@ -1425,7 +1485,7 @@ function evaluate(expression, environment) { // , root/currentRoot, branchId
             //expression = substitute(expression, environment, branchId);
             //strExp.args = expression.args
             var str = unparseString(quote(expression, environment, expression.operator.name), environment);
-            return str.slice(str.search(/\[|\|/) + 1, str[str.length - 1] === ']'? -1: undefined);
+            return str.slice(str.search(/\[|!|\|/) + 1, str[str.length - 1] === ']'? -1: undefined);
         }
 
         // a procedure is immediately executed
@@ -1580,7 +1640,7 @@ function evaluate(expression, environment) { // , root/currentRoot, branchId
                     for (var i = 0; i < arg.value.length; ++i) {
                         if (Array.isArray(arg.value[i])) {
                             for (var k = 0; k < arg.value[i].length; ++k) {
-                                evaluatedArgs.push(arg.value[k]);
+                                evaluatedArgs.push(arg.value[i][k]);
                             }
                         } else {
                             evaluatedArgs.push(arg.value[i]);

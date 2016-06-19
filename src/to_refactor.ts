@@ -883,3 +883,26 @@ var specialFormsArgumentNames = Object.create(null);
             };
         }
     ],
+
+editor.on('keypress', function (instance, event) {
+        var i;
+
+        console.log(event);
+        switch (event.charCode) {
+        case 91: // [
+            // var doc = editor.getDoc();
+            // var cursor = doc.getCursor();
+            // doc.replaceSelection('[]');
+            // event.preventDefault();
+            // var marker =
+            //     doc.markText(cursor, {line: cursor.line, ch: cursor.ch + 2}, { css: "background-color: rgba(255, 255, 255, 0.2)" });
+            // marker.path = "./0/1/3//" + Math.random();
+            // marker.on('beforeCursorEnter', function () {
+            //     console.log(marker.path);
+            // });
+            break;
+        default:
+            // execute_and_visualise();
+            break;
+        }
+    });

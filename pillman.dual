@@ -200,7 +200,7 @@ set-page[html'[
 
 		<div id="msg"></div>
 		<span>The canvas above must be focused for the keyboard input to work.</span><br />
-		<span>[SPACEBAR] controls Pillman</span><br />
+		<span>[C] controls Pillman</span><br />
 		<span>or alternatively</span><br />
 		<span>[Z] changes Pillman's direction and [X] changes Pillman's planet</span><br />
 		<br />
