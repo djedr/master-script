@@ -1,5 +1,7 @@
+Note: this is from mid-2016 and not maintained.
+
 # master-script
-Master thesis project
+Master thesis project (read it here online: http://djedr.github.io/masters_thesis.pdf).
 
 Application of modern web technologies and principles of functional, reactive and asynchronous programming in implementing a visual scripting language for use in computer game development.
 
